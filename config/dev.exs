@@ -17,7 +17,9 @@ config :qlock, Qlock.Repo,
 config :qlock, QlockWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}],
+  # http: [ip: {127, 0, 0, 1}],
+  # NOTE: Use 0.0.0.0 when i use WSL
+  http: [ip: {0,0,0,0}], # WSL work.
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
