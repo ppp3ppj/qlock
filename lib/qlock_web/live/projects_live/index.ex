@@ -50,7 +50,7 @@ defmodule QlockWeb.ProjectsLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_page={:projects}>
+    <Layouts.app flash={@flash} current_page={:projects} current_user={@current_user}>
       <.header>
         Projects
         <:actions>

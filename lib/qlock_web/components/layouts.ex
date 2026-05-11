@@ -27,6 +27,7 @@ defmodule QlockWeb.Layouts do
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :current_page, :atom, default: nil
+  attr :current_user, :any, default: nil
   attr :current_scope, :map, default: nil
 
   slot :inner_block, required: true
@@ -69,8 +70,14 @@ defmodule QlockWeb.Layouts do
           </li>
         </ul>
 
+        <%!-- User menu --%>
+        <div class="flex flex-col items-center gap-1 mt-auto mb-2" :if={@current_user}>
+          <.user_menu user={@current_user} />
+          <div class="divider my-0" />
+        </div>
+
         <%!-- Theme toggle at bottom --%>
-        <div class="flex flex-col items-center gap-1 mt-auto">
+        <div class="flex flex-col items-center gap-1">
           <button
             class="btn btn-ghost btn-square btn-sm tooltip tooltip-right"
             data-tip="System"
@@ -170,6 +177,38 @@ defmodule QlockWeb.Layouts do
 
   See <head> in root.html.heex which applies the theme before page load.
   """
+  attr :user, :any, required: true
+
+  def user_menu(assigns) do
+    ~H"""
+    <div class="dropdown dropdown-right">
+      <div tabindex="0" role="button" class="cursor-pointer hover:opacity-80 transition-opacity">
+        <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
+          <span class="text-xs font-bold leading-none select-none">
+            {String.first(to_string(@user.email)) |> String.upcase()}
+          </span>
+        </div>
+      </div>
+
+      <ul
+        tabindex="0"
+        class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300 ml-2"
+      >
+        <li class="px-3 py-2 text-xs text-base-content/60 font-medium truncate">
+          {to_string(@user.email)}
+        </li>
+        <div class="divider my-0" />
+        <li>
+          <.link method="delete" href={~p"/sign-out"} class="gap-2 text-error hover:bg-error/10">
+            <.icon name="hero-arrow-right-on-rectangle" class="size-4" />
+            Sign out
+          </.link>
+        </li>
+      </ul>
+    </div>
+    """
+  end
+
   def theme_toggle(assigns) do
     ~H"""
     <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
