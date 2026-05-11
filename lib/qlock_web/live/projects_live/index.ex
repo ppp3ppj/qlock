@@ -38,7 +38,7 @@ defmodule QlockWeb.ProjectsLive.Index do
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     project = Ash.get!(Project, id, actor: socket.assigns.current_user, domain: Projects)
-    Ash.destroy!(project, actor: socket.assigns.current_user, domain: Projects)
+    Ash.destroy!(project, action: :destroy_with_categories, actor: socket.assigns.current_user, domain: Projects)
     {:noreply, socket |> put_flash(:info, "Project deleted") |> load_projects()}
   end
 

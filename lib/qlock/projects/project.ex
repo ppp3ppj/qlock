@@ -15,7 +15,16 @@ defmodule Qlock.Projects.Project do
 
     create :create do
       accept [:name]
+      # Automatically sets user_id from the authenticated actor,
+      # so callers never need to pass it manually.
       change relate_actor(:user)
+    end
+
+    # Deletes all related categories first, then removes the project.
+    # See Qlock.Projects.Changes.CascadeDeleteCategories for full rationale.
+    destroy :destroy_with_categories do
+      require_atomic? false
+      change Qlock.Projects.Changes.CascadeDeleteCategories
     end
   end
 
