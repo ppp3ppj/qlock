@@ -3,35 +3,25 @@ defmodule Qlock.Projects.Project do
     otp_app: :qlock,
     domain: Qlock.Projects,
     data_layer: AshSqlite.DataLayer,
-    authorizers: [Ash.Policy.Authorizer],
-    extensions: [AshJsonApi.Resource]
+    authorizers: [Ash.Policy.Authorizer]
 
   sqlite do
     table "projects"
     repo Qlock.Repo
   end
 
-  json_api do
-    type "project"
-
-    routes do
-      base "/projects"
-
-      get :read
-      index :read
-      post :create
-      patch :update
-      delete :destroy
-    end
-  end
-
   actions do
-    defaults [:read, :create, :update, :destroy]
+    defaults [:read, :update, :destroy]
+
+    create :create do
+      accept [:name]
+      change relate_actor(:user)
+    end
   end
 
   policies do
     policy action_type(:read) do
-      authorize_if actor_attribute_equals(:id, :user_id)
+      authorize_if relates_to_actor_via(:user)
     end
 
     policy action_type(:create) do
@@ -39,7 +29,7 @@ defmodule Qlock.Projects.Project do
     end
 
     policy action_type([:update, :destroy]) do
-      authorize_if actor_attribute_equals(:id, :user_id)
+      authorize_if relates_to_actor_via(:user)
     end
   end
 

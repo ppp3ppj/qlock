@@ -35,6 +35,9 @@ defmodule QlockWeb.Router do
       #
       # If an authenticated user must *not* be present:
       # on_mount {QlockWeb.LiveUserAuth, :live_no_user}
+
+      live "/projects", ProjectsLive.Index, :index
+      live "/projects/:id", ProjectsLive.Show, :show
     end
   end
 
