@@ -47,39 +47,39 @@ defmodule QlockWeb.Layouts do
         <%!-- Nav icons --%>
         <ul class="flex flex-col items-center gap-1 flex-1 mt-1">
           <li class="tooltip tooltip-right" data-tip="Home">
-            <a
-              href={~p"/"}
+            <.link
+              navigate={~p"/"}
               class={[
                 "btn btn-ghost btn-square btn-sm",
                 @current_page == :home && "bg-base-300 text-primary"
               ]}
             >
               <.icon name="hero-home" class="size-5" />
-            </a>
+            </.link>
           </li>
           <li class="tooltip tooltip-right" data-tip="Projects">
-            <a
-              href={~p"/projects"}
+            <.link
+              navigate={~p"/projects"}
               class={[
                 "btn btn-ghost btn-square btn-sm",
                 @current_page == :projects && "bg-base-300 text-primary"
               ]}
             >
               <.icon name="hero-folder" class="size-5" />
-            </a>
+            </.link>
           </li>
 
           <%!-- Settings pushed to bottom of nav --%>
           <li class="tooltip tooltip-right mt-auto" data-tip="Settings">
-            <a
-              href={~p"/settings"}
+            <.link
+              navigate={~p"/settings"}
               class={[
                 "btn btn-ghost btn-square btn-sm",
                 @current_page == :settings && "bg-base-300 text-primary"
               ]}
             >
               <.icon name="hero-cog-6-tooth" class="size-5" />
-            </a>
+            </.link>
           </li>
         </ul>
 
@@ -94,12 +94,12 @@ defmodule QlockWeb.Layouts do
       <div class="flex flex-col flex-1 min-w-0">
         <div class="navbar bg-base-100 border-b border-base-300 lg:hidden sticky top-0 z-30">
           <div class="flex gap-2">
-            <a href={~p"/"} class="btn btn-ghost btn-square btn-sm">
+            <.link navigate={~p"/"} class="btn btn-ghost btn-square btn-sm">
               <.icon name="hero-home" class="size-5" />
-            </a>
-            <a href={~p"/projects"} class="btn btn-ghost btn-square btn-sm">
+            </.link>
+            <.link navigate={~p"/projects"} class="btn btn-ghost btn-square btn-sm">
               <.icon name="hero-folder" class="size-5" />
-            </a>
+            </.link>
           </div>
           <span class="font-bold ml-2">Qlock</span>
         </div>
