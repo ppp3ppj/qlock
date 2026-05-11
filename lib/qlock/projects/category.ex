@@ -11,10 +11,14 @@ defmodule Qlock.Projects.Category do
   end
 
   actions do
-    defaults [:read, :update, :destroy]
+    defaults [:read, :destroy]
 
     create :create do
       accept [:name, :project_id]
+    end
+
+    update :update do
+      accept [:name]
     end
   end
 

@@ -9,7 +9,7 @@ defmodule QlockWeb.ProjectsLive.Show do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     project = load_project(id, socket.assigns.current_user)
-    {:ok, assign(socket, project: project, show_form: false)}
+    {:ok, assign(socket, project: project, show_form: false, editing_category_id: nil)}
   end
 
   @impl true
@@ -20,6 +20,33 @@ defmodule QlockWeb.ProjectsLive.Show do
   @impl true
   def handle_event("cancel", _params, socket) do
     {:noreply, assign(socket, show_form: false)}
+  end
+
+  @impl true
+  def handle_event("edit_category", %{"id" => id}, socket) do
+    {:noreply, assign(socket, editing_category_id: id)}
+  end
+
+  @impl true
+  def handle_event("cancel_edit", _params, socket) do
+    {:noreply, assign(socket, editing_category_id: nil)}
+  end
+
+  @impl true
+  def handle_event("update_category", %{"id" => id, "name" => name}, socket) do
+    category = Ash.get!(Category, id, actor: socket.assigns.current_user, domain: Projects)
+
+    category
+    |> Ash.Changeset.for_update(:update, %{name: name}, actor: socket.assigns.current_user)
+    |> Ash.update(domain: Projects)
+    |> case do
+      {:ok, _category} ->
+        project = load_project(socket.assigns.project.id, socket.assigns.current_user)
+        {:noreply, assign(socket, project: project, editing_category_id: nil)}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, "Failed to update: #{inspect(error)}")}
+    end
   end
 
   @impl true
@@ -89,9 +116,36 @@ defmodule QlockWeb.ProjectsLive.Show do
       </div>
 
       <.table id="categories" rows={@project.categories}>
-        <:col :let={category} label="Category">{category.name}</:col>
+        <:col :let={category} label="Category">
+          <span :if={@editing_category_id != category.id}>{category.name}</span>
+          <form
+            :if={@editing_category_id == category.id}
+            phx-submit="update_category"
+            phx-value-id={category.id}
+            class="flex gap-2 items-center"
+          >
+            <input
+              type="text"
+              name="name"
+              value={category.name}
+              class="input input-bordered input-sm"
+              required
+              autofocus
+            />
+            <button type="submit" class="btn btn-xs btn-primary">Save</button>
+            <button type="button" phx-click="cancel_edit" class="btn btn-xs">Cancel</button>
+          </form>
+        </:col>
         <:action :let={category}>
           <.button
+            :if={@editing_category_id != category.id}
+            phx-click="edit_category"
+            phx-value-id={category.id}
+          >
+            Edit
+          </.button>
+          <.button
+            :if={@editing_category_id != category.id}
             phx-click="delete_category"
             phx-value-id={category.id}
             data-confirm="Delete this category?"
