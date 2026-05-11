@@ -26,47 +26,97 @@ defmodule QlockWeb.Layouts do
 
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
-
-  attr :current_scope, :map,
-    default: nil,
-    doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
+  attr :current_page, :atom, default: nil
+  attr :current_scope, :map, default: nil
 
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
+    <div class="flex min-h-screen">
+      <%!-- Icon sidebar --%>
+      <aside class="hidden lg:flex flex-col items-center w-14 bg-base-200 border-r border-base-300 py-3 gap-1 shrink-0">
+        <%!-- Logo --%>
+        <a href={~p"/"} class="mb-3">
+          <img src={~p"/images/logo.svg"} width="28" />
         </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
+
+        <div class="divider my-0" />
+
+        <%!-- Nav icons --%>
+        <ul class="flex flex-col items-center gap-1 flex-1 mt-1">
+          <li class="tooltip tooltip-right" data-tip="Home">
+            <a
+              href={~p"/"}
+              class={[
+                "btn btn-ghost btn-square btn-sm",
+                @current_page == :home && "bg-base-300 text-primary"
+              ]}
+            >
+              <.icon name="hero-home" class="size-5" />
+            </a>
           </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
+          <li class="tooltip tooltip-right" data-tip="Projects">
+            <a
+              href={~p"/projects"}
+              class={[
+                "btn btn-ghost btn-square btn-sm",
+                @current_page == :projects && "bg-base-300 text-primary"
+              ]}
+            >
+              <.icon name="hero-folder" class="size-5" />
             </a>
           </li>
         </ul>
-      </div>
-    </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
-        {render_slot(@inner_block)}
+        <%!-- Theme toggle at bottom --%>
+        <div class="flex flex-col items-center gap-1 mt-auto">
+          <button
+            class="btn btn-ghost btn-square btn-sm tooltip tooltip-right"
+            data-tip="System"
+            phx-click={JS.dispatch("phx:set-theme")}
+            data-phx-theme="system"
+          >
+            <.icon name="hero-computer-desktop-micro" class="size-4" />
+          </button>
+          <button
+            class="btn btn-ghost btn-square btn-sm tooltip tooltip-right"
+            data-tip="Light"
+            phx-click={JS.dispatch("phx:set-theme")}
+            data-phx-theme="light"
+          >
+            <.icon name="hero-sun-micro" class="size-4" />
+          </button>
+          <button
+            class="btn btn-ghost btn-square btn-sm tooltip tooltip-right"
+            data-tip="Dark"
+            phx-click={JS.dispatch("phx:set-theme")}
+            data-phx-theme="dark"
+          >
+            <.icon name="hero-moon-micro" class="size-4" />
+          </button>
+        </div>
+      </aside>
+
+      <%!-- Mobile topbar --%>
+      <div class="flex flex-col flex-1 min-w-0">
+        <div class="navbar bg-base-100 border-b border-base-300 lg:hidden sticky top-0 z-30">
+          <div class="flex gap-2">
+            <a href={~p"/"} class="btn btn-ghost btn-square btn-sm">
+              <.icon name="hero-home" class="size-5" />
+            </a>
+            <a href={~p"/projects"} class="btn btn-ghost btn-square btn-sm">
+              <.icon name="hero-folder" class="size-5" />
+            </a>
+          </div>
+          <span class="font-bold ml-2">Qlock</span>
+        </div>
+
+        <main class="flex-1 p-6 max-w-5xl w-full">
+          {render_slot(@inner_block)}
+        </main>
       </div>
-    </main>
+    </div>
 
     <.flash_group flash={@flash} />
     """
