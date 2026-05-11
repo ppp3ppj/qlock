@@ -166,31 +166,52 @@ defmodule QlockWeb.Layouts do
 
   def user_menu(assigns) do
     ~H"""
-    <div class="dropdown dropdown-right">
-      <div tabindex="0" role="button" class="cursor-pointer hover:opacity-80 transition-opacity">
-        <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
-          <span class="text-xs font-bold leading-none select-none">
+    <div
+      role="button"
+      onclick="document.getElementById('user-modal').showModal()"
+      class="cursor-pointer hover:opacity-80 transition-opacity"
+    >
+      <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
+        <span class="text-xs font-bold leading-none select-none">
+          {String.first(to_string(@user.email)) |> String.upcase()}
+        </span>
+      </div>
+    </div>
+
+    <dialog id="user-modal" class="modal modal-middle">
+      <div class="modal-box max-w-xs p-6 flex flex-col items-center gap-4">
+        <div class="bg-primary text-primary-content rounded-full w-16 h-16 flex items-center justify-center">
+          <span class="text-2xl font-bold leading-none select-none">
             {String.first(to_string(@user.email)) |> String.upcase()}
           </span>
         </div>
-      </div>
 
-      <ul
-        tabindex="0"
-        class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300 ml-2"
-      >
-        <li class="px-3 py-2 text-xs text-base-content/60 font-medium truncate">
+        <p class="text-sm text-base-content/70 font-medium truncate w-full text-center">
           {to_string(@user.email)}
-        </li>
-        <div class="divider my-0" />
-        <li>
-          <.link method="delete" href={~p"/sign-out"} class="gap-2 text-error hover:bg-error/10">
+        </p>
+
+        <div class="divider my-0 w-full" />
+
+        <div class="flex flex-col gap-2 w-full">
+          <.link
+            method="delete"
+            href={~p"/sign-out"}
+            class="btn btn-error btn-outline w-full gap-2"
+          >
             <.icon name="hero-arrow-right-on-rectangle" class="size-4" />
             Sign out
           </.link>
-        </li>
-      </ul>
-    </div>
+
+          <form method="dialog" class="w-full">
+            <button class="btn w-full">Cancel</button>
+          </form>
+        </div>
+      </div>
+
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
     """
   end
 
