@@ -38,6 +38,7 @@ defmodule QlockWeb.Router do
 
       live "/projects", ProjectsLive.Index, :index
       live "/projects/:id", ProjectsLive.Show, :show
+      live "/settings", SettingsLive, :index
     end
   end
 

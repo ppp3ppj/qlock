@@ -68,40 +68,25 @@ defmodule QlockWeb.Layouts do
               <.icon name="hero-folder" class="size-5" />
             </a>
           </li>
+
+          <%!-- Settings pushed to bottom of nav --%>
+          <li class="tooltip tooltip-right mt-auto" data-tip="Settings">
+            <a
+              href={~p"/settings"}
+              class={[
+                "btn btn-ghost btn-square btn-sm",
+                @current_page == :settings && "bg-base-300 text-primary"
+              ]}
+            >
+              <.icon name="hero-cog-6-tooth" class="size-5" />
+            </a>
+          </li>
         </ul>
 
         <%!-- User menu --%>
-        <div class="flex flex-col items-center gap-1 mt-auto mb-2" :if={@current_user}>
-          <.user_menu user={@current_user} />
+        <div class="flex flex-col items-center gap-2 mb-2" :if={@current_user}>
           <div class="divider my-0" />
-        </div>
-
-        <%!-- Theme toggle at bottom --%>
-        <div class="flex flex-col items-center gap-1">
-          <button
-            class="btn btn-ghost btn-square btn-sm tooltip tooltip-right"
-            data-tip="System"
-            phx-click={JS.dispatch("phx:set-theme")}
-            data-phx-theme="system"
-          >
-            <.icon name="hero-computer-desktop-micro" class="size-4" />
-          </button>
-          <button
-            class="btn btn-ghost btn-square btn-sm tooltip tooltip-right"
-            data-tip="Light"
-            phx-click={JS.dispatch("phx:set-theme")}
-            data-phx-theme="light"
-          >
-            <.icon name="hero-sun-micro" class="size-4" />
-          </button>
-          <button
-            class="btn btn-ghost btn-square btn-sm tooltip tooltip-right"
-            data-tip="Dark"
-            phx-click={JS.dispatch("phx:set-theme")}
-            data-phx-theme="dark"
-          >
-            <.icon name="hero-moon-micro" class="size-4" />
-          </button>
+          <.user_menu user={@current_user} />
         </div>
       </aside>
 
