@@ -1,5 +1,5 @@
 defmodule QlockWeb.AshJsonApiRouter do
   use AshJsonApi.Router,
-    domains: [],
+    domains: [Qlock.Accounts],
     open_api: "/open_api"
 end

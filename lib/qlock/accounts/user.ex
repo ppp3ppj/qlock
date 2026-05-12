@@ -4,11 +4,22 @@ defmodule Qlock.Accounts.User do
     domain: Qlock.Accounts,
     data_layer: AshSqlite.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
-    extensions: [AshAuthentication]
+    extensions: [AshAuthentication, AshJsonApi.Resource]
 
   sqlite do
     table "users"
     repo Qlock.Repo
+  end
+
+  json_api do
+    type "user"
+
+    routes do
+      base "/users"
+
+      post :register_with_password, route: "/register"
+      route :post, "/sign_in", :sign_in
+    end
   end
 
   authentication do
@@ -84,6 +95,27 @@ defmodule Qlock.Accounts.User do
                 strategy_name: :password, password_argument: :current_password}
 
       change {AshAuthentication.Strategy.Password.HashPasswordChange, strategy_name: :password}
+    end
+
+    action :sign_in, :map do
+      argument :email, :ci_string, allow_nil?: false
+      argument :password, :string, sensitive?: true, allow_nil?: false
+
+      run fn input, _context ->
+        Qlock.Accounts.User
+        |> Ash.Query.for_read(:sign_in_with_password, %{
+          email: input.arguments.email,
+          password: input.arguments.password
+        })
+        |> Ash.read_one(domain: Qlock.Accounts)
+        |> case do
+          {:ok, user} ->
+            {:ok, %{id: user.id, email: to_string(user.email), token: user.__metadata__[:token]}}
+
+          {:error, error} ->
+            {:error, error}
+        end
+      end
     end
 
     read :sign_in_with_password do
@@ -227,6 +259,24 @@ defmodule Qlock.Accounts.User do
   policies do
     bypass AshAuthentication.Checks.AshAuthenticationInteraction do
       authorize_if always()
+    end
+
+    bypass action(:register_with_password) do
+      authorize_if always()
+    end
+
+    bypass action(:sign_in_with_password) do
+      authorize_if always()
+    end
+
+    bypass action(:sign_in) do
+      authorize_if always()
+    end
+
+    # Allow any authenticated user to read user records (e.g. when loading
+    # project members). Only public attributes (email) are exposed.
+    policy action_type(:read) do
+      authorize_if actor_present()
     end
   end
 

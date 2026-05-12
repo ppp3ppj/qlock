@@ -26,47 +26,89 @@ defmodule QlockWeb.Layouts do
 
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
-
-  attr :current_scope, :map,
-    default: nil,
-    doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
+  attr :current_page, :atom, default: nil
+  attr :current_user, :any, default: nil
+  attr :current_scope, :map, default: nil
 
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
+    <div class="flex min-h-screen">
+      <%!-- Icon sidebar --%>
+      <aside class="hidden lg:flex flex-col items-center w-14 bg-base-200 border-r border-base-300 py-3 gap-1 shrink-0">
+        <%!-- Logo --%>
+        <a href={~p"/"} class="mb-3">
+          <img src={~p"/images/logo.svg"} width="28" />
         </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
+
+        <div class="divider my-0" />
+
+        <%!-- Nav icons --%>
+        <ul class="flex flex-col items-center gap-1 flex-1 mt-1">
+          <li class="tooltip tooltip-right" data-tip="Home">
+            <.link
+              navigate={~p"/"}
+              class={[
+                "btn btn-ghost btn-square btn-sm",
+                @current_page == :home && "bg-base-300 text-primary"
+              ]}
+            >
+              <.icon name="hero-home" class="size-5" />
+            </.link>
           </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
+          <li class="tooltip tooltip-right" data-tip="Projects">
+            <.link
+              navigate={~p"/projects"}
+              class={[
+                "btn btn-ghost btn-square btn-sm",
+                @current_page == :projects && "bg-base-300 text-primary"
+              ]}
+            >
+              <.icon name="hero-folder" class="size-5" />
+            </.link>
           </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
+
+          <%!-- Settings pushed to bottom of nav --%>
+          <li class="tooltip tooltip-right mt-auto" data-tip="Settings">
+            <.link
+              navigate={~p"/settings"}
+              class={[
+                "btn btn-ghost btn-square btn-sm",
+                @current_page == :settings && "bg-base-300 text-primary"
+              ]}
+            >
+              <.icon name="hero-cog-6-tooth" class="size-5" />
+            </.link>
           </li>
         </ul>
-      </div>
-    </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
-        {render_slot(@inner_block)}
+        <%!-- User menu --%>
+        <div class="flex flex-col items-center gap-2 mb-2" :if={@current_user}>
+          <div class="divider my-0" />
+          <.user_menu user={@current_user} />
+        </div>
+      </aside>
+
+      <%!-- Mobile topbar --%>
+      <div class="flex flex-col flex-1 min-w-0">
+        <div class="navbar bg-base-100 border-b border-base-300 lg:hidden sticky top-0 z-30">
+          <div class="flex gap-2">
+            <.link navigate={~p"/"} class="btn btn-ghost btn-square btn-sm">
+              <.icon name="hero-home" class="size-5" />
+            </.link>
+            <.link navigate={~p"/projects"} class="btn btn-ghost btn-square btn-sm">
+              <.icon name="hero-folder" class="size-5" />
+            </.link>
+          </div>
+          <span class="font-bold ml-2">Qlock</span>
+        </div>
+
+        <main class="flex-1 p-6 max-w-5xl w-full">
+          {render_slot(@inner_block)}
+        </main>
       </div>
-    </main>
+    </div>
 
     <.flash_group flash={@flash} />
     """
@@ -120,6 +162,59 @@ defmodule QlockWeb.Layouts do
 
   See <head> in root.html.heex which applies the theme before page load.
   """
+  attr :user, :any, required: true
+
+  def user_menu(assigns) do
+    ~H"""
+    <div
+      role="button"
+      onclick="document.getElementById('user-modal').showModal()"
+      class="cursor-pointer hover:opacity-80 transition-opacity"
+    >
+      <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
+        <span class="text-xs font-bold leading-none select-none">
+          {String.first(to_string(@user.email)) |> String.upcase()}
+        </span>
+      </div>
+    </div>
+
+    <dialog id="user-modal" class="modal modal-middle">
+      <div class="modal-box max-w-xs p-6 flex flex-col items-center gap-4">
+        <div class="bg-primary text-primary-content rounded-full w-16 h-16 flex items-center justify-center">
+          <span class="text-2xl font-bold leading-none select-none">
+            {String.first(to_string(@user.email)) |> String.upcase()}
+          </span>
+        </div>
+
+        <p class="text-sm text-base-content/70 font-medium truncate w-full text-center">
+          {to_string(@user.email)}
+        </p>
+
+        <div class="divider my-0 w-full" />
+
+        <div class="flex flex-col gap-2 w-full">
+          <.link
+            method="delete"
+            href={~p"/sign-out"}
+            class="btn btn-error btn-outline w-full gap-2"
+          >
+            <.icon name="hero-arrow-right-on-rectangle" class="size-4" />
+            Sign out
+          </.link>
+
+          <form method="dialog" class="w-full">
+            <button class="btn w-full">Cancel</button>
+          </form>
+        </div>
+      </div>
+
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+    """
+  end
+
   def theme_toggle(assigns) do
     ~H"""
     <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
