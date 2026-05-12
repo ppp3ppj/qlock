@@ -79,8 +79,12 @@ defmodule QlockWeb.TimeTrackingLive do
 
   @impl true
   def handle_event("next_day", _params, socket) do
-    date = Date.add(socket.assigns.selected_date, 1)
-    {:noreply, assign(socket, selected_date: date, entries: load_entries(date, socket.assigns.current_user))}
+    if socket.assigns.selected_date >= Date.utc_today() do
+      {:noreply, socket}
+    else
+      date = Date.add(socket.assigns.selected_date, 1)
+      {:noreply, assign(socket, selected_date: date, entries: load_entries(date, socket.assigns.current_user))}
+    end
   end
 
   @impl true
@@ -117,24 +121,46 @@ defmodule QlockWeb.TimeTrackingLive do
     raw = Map.get(params, "duration_minutes", "")
     {parsed, duration_error} = validate_duration(raw)
 
-    if duration_error do
-      form =
-        socket.assigns.form.source
-        |> AshPhoenix.Form.validate(Map.put(params, "duration_minutes", nil))
-        |> Map.put(:errors, true)
-        |> to_form()
-
-      {:noreply, assign(socket, form: form, raw_duration: raw, duration_error: duration_error)}
-    else
-      params = Map.put(params, "duration_minutes", parsed)
-
-      case AshPhoenix.Form.submit(socket.assigns.form.source, params: params) do
-        {:ok, _entry} ->
-          {:noreply, push_navigate(socket, to: ~p"/time")}
-
-        {:error, form} ->
-          {:noreply, assign(socket, form: to_form(form), raw_duration: raw, duration_error: nil)}
+    date_error =
+      case Date.from_iso8601(Map.get(params, "date", "")) do
+        {:ok, d} ->
+          if Date.compare(d, Date.utc_today()) == :gt, do: "cannot be a future date"
+        _ ->
+          nil
       end
+
+    cond do
+      duration_error ->
+        form =
+          socket.assigns.form.source
+          |> AshPhoenix.Form.validate(Map.put(params, "duration_minutes", nil))
+          |> Map.put(:errors, true)
+          |> to_form()
+
+        {:noreply, assign(socket, form: form, raw_duration: raw, duration_error: duration_error)}
+
+      date_error ->
+        form =
+          socket.assigns.form.source
+          |> AshPhoenix.Form.validate(params)
+          |> Map.put(:errors, true)
+          |> to_form()
+
+        {:noreply,
+         socket
+         |> assign(form: form, raw_duration: raw, duration_error: nil)
+         |> put_flash(:error, "Date #{date_error}")}
+
+      true ->
+        params = Map.put(params, "duration_minutes", parsed)
+
+        case AshPhoenix.Form.submit(socket.assigns.form.source, params: params) do
+          {:ok, _entry} ->
+            {:noreply, push_navigate(socket, to: ~p"/time")}
+
+          {:error, form} ->
+            {:noreply, assign(socket, form: to_form(form), raw_duration: raw, duration_error: nil)}
+        end
     end
   end
 
@@ -214,17 +240,22 @@ defmodule QlockWeb.TimeTrackingLive do
 
         <%= if @live_action == :index do %>
           <%!-- Date navigation --%>
+          <% is_today = @selected_date == Date.utc_today() %>
           <div class="flex items-center justify-between py-4 border-b border-base-300 mb-4">
             <button phx-click="prev_day" class="btn btn-ghost btn-sm btn-square">
               <.icon name="hero-chevron-left" class="size-5" />
             </button>
             <span class="font-semibold text-base">{format_date(@selected_date)}</span>
-            <button phx-click="next_day" class="btn btn-ghost btn-sm btn-square">
+            <button
+              phx-click="next_day"
+              class="btn btn-ghost btn-sm btn-square"
+              disabled={is_today}
+            >
               <.icon name="hero-chevron-right" class="size-5" />
             </button>
           </div>
 
-          <div class="mb-4">
+          <div :if={is_today} class="mb-4">
             <.link navigate={~p"/time/new"} class="btn btn-primary btn-sm gap-2">
               <.icon name="hero-plus" class="size-4" /> Add Entry
             </.link>
@@ -298,6 +329,7 @@ defmodule QlockWeb.TimeTrackingLive do
                 type="date"
                 label="Date"
                 value={Date.to_iso8601(@selected_date)}
+                max={Date.to_iso8601(Date.utc_today())}
               />
               <%!-- Duration: raw string kept in @raw_duration; @duration_error for format errors --%>
               <div class="form-control">
