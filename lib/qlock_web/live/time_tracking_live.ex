@@ -16,8 +16,7 @@ defmodule QlockWeb.TimeTrackingLive do
        entries: [],
        projects: load_projects(socket.assigns.current_user),
        categories: [],
-       form_project_id: nil,
-       editing_entry: nil
+       form: nil
      )}
   end
 
@@ -29,12 +28,19 @@ defmodule QlockWeb.TimeTrackingLive do
   defp apply_action(socket, :index, _params) do
     assign(socket,
       entries: load_entries(socket.assigns.selected_date, socket.assigns.current_user),
-      editing_entry: nil
+      form: nil
     )
   end
 
   defp apply_action(socket, :new, _params) do
-    assign(socket, editing_entry: nil, categories: [], form_project_id: nil)
+    form =
+      AshPhoenix.Form.for_create(TimeEntry, :create,
+        as: "entry",
+        actor: socket.assigns.current_user,
+        domain: TimeTracking
+      )
+
+    assign(socket, form: to_form(form), categories: [], raw_duration: "", duration_error: nil)
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
@@ -45,19 +51,25 @@ defmodule QlockWeb.TimeTrackingLive do
         load: [:project, :category]
       )
 
+    form =
+      AshPhoenix.Form.for_update(entry, :update,
+        as: "entry",
+        actor: socket.assigns.current_user,
+        domain: TimeTracking
+      )
+
     categories =
-      if entry.project_id,
-        do: load_categories(entry.project_id),
-        else: []
+      if entry.project_id, do: load_categories(entry.project_id), else: []
 
     assign(socket,
-      editing_entry: entry,
-      form_project_id: entry.project_id,
-      categories: categories
+      form: to_form(%{form | errors: true}),
+      categories: categories,
+      raw_duration: format_duration(entry.duration_minutes),
+      duration_error: nil
     )
   end
 
-  # --- Date navigation (index only) ---
+  # --- Date navigation ---
 
   @impl true
   def handle_event("prev_day", _params, socket) do
@@ -77,50 +89,52 @@ defmodule QlockWeb.TimeTrackingLive do
     {:noreply, assign(socket, selected_date: date, entries: load_entries(date, socket.assigns.current_user))}
   end
 
-  # --- Form events (new + edit) ---
+  # --- Form events ---
 
   @impl true
-  def handle_event("project_changed", %{"project_id" => ""}, socket) do
-    {:noreply, assign(socket, form_project_id: nil, categories: [])}
-  end
-
-  @impl true
-  def handle_event("project_changed", %{"project_id" => project_id}, socket) do
-    {:noreply, assign(socket, form_project_id: project_id, categories: load_categories(project_id))}
-  end
-
-  @impl true
-  def handle_event("save_entry", params, socket) do
-    %{"task_name" => task_name, "duration" => duration_str, "date" => date_str, "overtime" => overtime} = params
-
-    attrs = %{
-      task_name: task_name,
-      duration_minutes: parse_duration(duration_str),
-      date: Date.from_iso8601!(date_str),
-      overtime: overtime == "true",
-      project_id: params |> Map.get("project_id", "") |> nilify(),
-      category_id: params |> Map.get("category_id", "") |> nilify()
-    }
-
-    result =
-      case socket.assigns.live_action do
-        :new ->
-          TimeEntry
-          |> Ash.Changeset.for_create(:create, attrs, actor: socket.assigns.current_user)
-          |> Ash.create(domain: TimeTracking)
-
-        :edit ->
-          socket.assigns.editing_entry
-          |> Ash.Changeset.for_update(:update, attrs, actor: socket.assigns.current_user)
-          |> Ash.update(domain: TimeTracking)
+  def handle_event("validate", %{"entry" => params}, socket) do
+    categories =
+      case Map.get(params, "project_id", "") do
+        "" -> []
+        id -> load_categories(id)
       end
 
-    case result do
-      {:ok, _} ->
-        {:noreply, push_navigate(socket, to: ~p"/time")}
+    raw = Map.get(params, "duration_minutes", "")
+    {parsed, duration_error} = validate_duration(raw)
+    params = Map.put(params, "duration_minutes", parsed)
 
-      {:error, error} ->
-        {:noreply, put_flash(socket, :error, "Failed: #{inspect(error)}")}
+    form =
+      socket.assigns.form.source
+      |> AshPhoenix.Form.validate(params)
+      |> Map.put(:errors, true)
+      |> to_form()
+
+    {:noreply, assign(socket, form: form, categories: categories, raw_duration: raw, duration_error: duration_error)}
+  end
+
+  @impl true
+  def handle_event("save_entry", %{"entry" => params}, socket) do
+    raw = Map.get(params, "duration_minutes", "")
+    {parsed, duration_error} = validate_duration(raw)
+
+    if duration_error do
+      form =
+        socket.assigns.form.source
+        |> AshPhoenix.Form.validate(Map.put(params, "duration_minutes", nil))
+        |> Map.put(:errors, true)
+        |> to_form()
+
+      {:noreply, assign(socket, form: form, raw_duration: raw, duration_error: duration_error)}
+    else
+      params = Map.put(params, "duration_minutes", parsed)
+
+      case AshPhoenix.Form.submit(socket.assigns.form.source, params: params) do
+        {:ok, _entry} ->
+          {:noreply, push_navigate(socket, to: ~p"/time")}
+
+        {:error, form} ->
+          {:noreply, assign(socket, form: to_form(form), raw_duration: raw, duration_error: nil)}
+      end
     end
   end
 
@@ -151,11 +165,38 @@ defmodule QlockWeb.TimeTrackingLive do
     |> Ash.read!(domain: Qlock.Projects, authorize?: false)
   end
 
-  defp parse_duration(""), do: 0
-  defp parse_duration(str) do
-    case String.split(str, ":") do
-      [h, m] -> String.to_integer(h) * 60 + String.to_integer(m)
-      [h] -> String.to_integer(h) * 60
+  # Returns {minutes_string, nil} on success or {nil, error_message} on failure.
+  defp validate_duration(""), do: {nil, "can't be blank"}
+
+  defp validate_duration(str) do
+    parse_int = fn s ->
+      case Integer.parse(String.trim(s)) do
+        {n, ""} -> {:ok, n}
+        _ -> :error
+      end
+    end
+
+    result =
+      case String.split(str, ":", parts: 2) do
+        [h_str, m_str] ->
+          with {:ok, h} <- parse_int.(h_str),
+               {:ok, m} <- parse_int.(m_str),
+               true <- m in 0..59 do
+            {:ok, "#{h * 60 + m}"}
+          else
+            _ -> :invalid
+          end
+
+        [h_str] ->
+          case parse_int.(h_str) do
+            {:ok, h} -> {:ok, "#{h * 60}"}
+            _ -> :invalid
+          end
+      end
+
+    case result do
+      {:ok, minutes} -> {minutes, nil}
+      :invalid -> {nil, "must be in H:MM format (e.g. 1:30)"}
     end
   end
 
@@ -163,12 +204,7 @@ defmodule QlockWeb.TimeTrackingLive do
     "#{div(minutes, 60)}:#{String.pad_leading("#{rem(minutes, 60)}", 2, "0")}"
   end
 
-  defp nilify(""), do: nil
-  defp nilify(val), do: val
-
   defp format_date(date), do: Calendar.strftime(date, "%d %B %Y")
-
-  # --- Render ---
 
   @impl true
   def render(assigns) do
@@ -194,7 +230,6 @@ defmodule QlockWeb.TimeTrackingLive do
             </.link>
           </div>
 
-          <%!-- Entries --%>
           <div class="space-y-2">
             <div
               :for={entry <- @entries}
@@ -210,7 +245,9 @@ defmodule QlockWeb.TimeTrackingLive do
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <span :if={entry.overtime} class="badge badge-warning badge-sm">OT</span>
-                <span class="font-mono text-sm font-semibold">{format_duration(entry.duration_minutes)}</span>
+                <span class="font-mono text-sm font-semibold">
+                  {format_duration(entry.duration_minutes)}
+                </span>
                 <.link navigate={~p"/time/#{entry.id}/edit"} class="btn btn-ghost btn-xs">
                   <.icon name="hero-pencil" class="size-3.5" />
                 </.link>
@@ -231,7 +268,7 @@ defmodule QlockWeb.TimeTrackingLive do
             </div>
           </div>
 
-          <div class="flex items-center justify-between pt-4 mt-4 border-t border-base-300">
+          <div class="flex items-center pt-4 mt-4 border-t border-base-300">
             <button phx-click="today" class="flex items-center gap-1.5 text-sm text-base-content/60 hover:text-base-content transition-colors">
               <.icon name="hero-calendar" class="size-4" /> Today
             </button>
@@ -248,74 +285,65 @@ defmodule QlockWeb.TimeTrackingLive do
             </h1>
           </div>
 
-          <form phx-submit="save_entry" class="space-y-4">
+          <.form
+            for={@form}
+            phx-change="validate"
+            phx-submit="save_entry"
+            class="space-y-4"
+            novalidate
+          >
             <div class="grid grid-cols-2 gap-4">
-              <div class="form-control">
-                <label class="label"><span class="label-text">Date</span></label>
-                <input
-                  type="date"
-                  name="date"
-                  value={if @editing_entry, do: Date.to_iso8601(@editing_entry.date), else: Date.to_iso8601(@selected_date)}
-                  class="input input-bordered w-full"
-                  required
-                />
-              </div>
+              <.input
+                field={@form[:date]}
+                type="date"
+                label="Date"
+                value={Date.to_iso8601(@selected_date)}
+              />
+              <%!-- Duration: raw string kept in @raw_duration; @duration_error for format errors --%>
               <div class="form-control">
                 <label class="label"><span class="label-text">Time (H:MM)</span></label>
                 <input
                   type="text"
-                  name="duration"
-                  value={if @editing_entry, do: format_duration(@editing_entry.duration_minutes), else: ""}
-                  class="input input-bordered w-full"
+                  name="entry[duration_minutes]"
+                  value={@raw_duration}
+                  class={["input input-bordered w-full", @duration_error && "input-error"]}
                   placeholder="1:30"
-                  pattern="[0-9]+:[0-5][0-9]"
-                  title="Format: H:MM"
-                  required
-                  autofocus
                 />
+                <div :if={@duration_error} class="label">
+                  <span class="label-text-alt text-error">{@duration_error}</span>
+                </div>
               </div>
             </div>
 
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Task name</span>
-                <span class="label-text-alt text-error">required</span>
-              </label>
-              <textarea
-                name="task_name"
-                class="textarea textarea-bordered w-full"
-                placeholder="What did you work on?"
-                rows="3"
-                required
-              >{if @editing_entry, do: @editing_entry.task_name}</textarea>
-            </div>
+            <.input field={@form[:task_name]} type="textarea" label="Task name" rows={3} />
 
             <div class="grid grid-cols-2 gap-4">
               <div class="form-control">
                 <label class="label"><span class="label-text">Project</span></label>
-                <select
-                  name="project_id"
-                  class="select select-bordered w-full"
-                  phx-change="project_changed"
-                >
+                <select name="entry[project_id]" class="select select-bordered w-full">
                   <option value="">— None —</option>
                   <option
                     :for={p <- @projects}
                     value={p.id}
-                    selected={@editing_entry && @editing_entry.project_id == p.id}
+                    selected={@form[:project_id].value == p.id}
                   >
                     {p.name}
                   </option>
                 </select>
               </div>
+
               <div class="form-control">
                 <label class="label"><span class="label-text">Category</span></label>
-                <select name="category_id" class="select select-bordered w-full" disabled={@categories == []}>
+                <select
+                  name="entry[category_id]"
+                  class="select select-bordered w-full"
+                  disabled={@categories == []}
+                >
                   <option value="">— None —</option>
                   <option
                     :for={c <- @categories}
                     value={c.id}
-                    selected={@editing_entry && @editing_entry.category_id == c.id}
+                    selected={@form[:category_id].value == c.id}
                   >
                     {c.name}
                   </option>
@@ -323,27 +351,25 @@ defmodule QlockWeb.TimeTrackingLive do
               </div>
             </div>
 
-            <div class="flex items-center justify-between pt-2">
-              <label class="label cursor-pointer gap-3 p-0">
-                <input type="hidden" name="overtime" value="false" />
-                <input
-                  type="checkbox"
-                  name="overtime"
-                  value="true"
-                  class="checkbox checkbox-sm"
-                  checked={@editing_entry && @editing_entry.overtime}
-                />
-                <span class="label-text">Over time</span>
-              </label>
+            <label class="label cursor-pointer justify-start gap-3 p-0">
+              <input type="hidden" name="entry[overtime]" value="false" />
+              <input
+                type="checkbox"
+                name="entry[overtime]"
+                value="true"
+                class="checkbox checkbox-sm"
+                checked={@form[:overtime].value == true}
+              />
+              <span class="label-text">Over time</span>
+            </label>
 
-              <div class="flex gap-2">
-                <.link navigate={~p"/time"} class="btn btn-sm">Cancel</.link>
-                <button type="submit" class="btn btn-primary btn-sm">
-                  {if @live_action == :new, do: "Add", else: "Save"}
-                </button>
-              </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <.link navigate={~p"/time"} class="btn btn-sm">Cancel</.link>
+              <button type="submit" class="btn btn-primary btn-sm">
+                {if @live_action == :new, do: "Add", else: "Save"}
+              </button>
             </div>
-          </form>
+          </.form>
         <% end %>
       </div>
     </Layouts.app>
