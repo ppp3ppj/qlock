@@ -30,7 +30,10 @@ defmodule Qlock.Projects.Project do
 
   policies do
     policy action_type(:read) do
+      # Owner can always read their own projects
       authorize_if relates_to_actor_via(:user)
+      # Invited members can also read the project
+      authorize_if relates_to_actor_via([:project_members, :user])
     end
 
     policy action_type(:create) do
@@ -59,6 +62,10 @@ defmodule Qlock.Projects.Project do
     end
 
     has_many :categories, Qlock.Projects.Category do
+      public? true
+    end
+
+    has_many :project_members, Qlock.Projects.ProjectMember do
       public? true
     end
   end

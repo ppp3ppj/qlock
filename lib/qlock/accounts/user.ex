@@ -272,6 +272,12 @@ defmodule Qlock.Accounts.User do
     bypass action(:sign_in) do
       authorize_if always()
     end
+
+    # Allow any authenticated user to read user records (e.g. when loading
+    # project members). Only public attributes (email) are exposed.
+    policy action_type(:read) do
+      authorize_if actor_present()
+    end
   end
 
   attributes do

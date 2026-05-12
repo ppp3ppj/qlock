@@ -8,5 +8,6 @@ defmodule Qlock.Projects do
   resources do
     resource Qlock.Projects.Project
     resource Qlock.Projects.Category
+    resource Qlock.Projects.ProjectMember
   end
 end
