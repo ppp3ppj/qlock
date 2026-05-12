@@ -69,6 +69,18 @@ defmodule QlockWeb.Layouts do
             </.link>
           </li>
 
+          <li class="tooltip tooltip-right" data-tip="Time Tracking">
+            <.link
+              navigate={~p"/time"}
+              class={[
+                "btn btn-ghost btn-square btn-sm",
+                @current_page == :time && "bg-base-300 text-primary"
+              ]}
+            >
+              <.icon name="hero-clock" class="size-5" />
+            </.link>
+          </li>
+
           <%!-- Settings pushed to bottom of nav --%>
           <li class="tooltip tooltip-right mt-auto" data-tip="Settings">
             <.link

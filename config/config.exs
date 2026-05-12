@@ -70,7 +70,7 @@ config :spark,
 config :qlock,
   ecto_repos: [Qlock.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Qlock.Accounts, Qlock.Projects]
+  ash_domains: [Qlock.Accounts, Qlock.Projects, Qlock.TimeTracking]
 
 # Configure the endpoint
 config :qlock, QlockWeb.Endpoint,
