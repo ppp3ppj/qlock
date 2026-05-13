@@ -54,7 +54,7 @@ defmodule QlockWeb.Layouts do
                 @current_page == :home && "bg-base-300 text-primary"
               ]}
             >
-              <.icon name="hero-home" class="size-5" />
+              <.icon name="ri-home-line" class="size-5" />
             </.link>
           </li>
           <li class="tooltip tooltip-right" data-tip="Projects">
@@ -65,7 +65,7 @@ defmodule QlockWeb.Layouts do
                 @current_page == :projects && "bg-base-300 text-primary"
               ]}
             >
-              <.icon name="hero-folder" class="size-5" />
+              <.icon name="ri-folder-line" class="size-5" />
             </.link>
           </li>
 
@@ -77,7 +77,7 @@ defmodule QlockWeb.Layouts do
                 @current_page == :time && "bg-base-300 text-primary"
               ]}
             >
-              <.icon name="hero-clock" class="size-5" />
+              <.icon name="ri-time-line" class="size-5" />
             </.link>
           </li>
 
@@ -90,7 +90,7 @@ defmodule QlockWeb.Layouts do
                 @current_page == :settings && "bg-base-300 text-primary"
               ]}
             >
-              <.icon name="hero-cog-6-tooth" class="size-5" />
+              <.icon name="ri-settings-3-line" class="size-5" />
             </.link>
           </li>
         </ul>
@@ -107,10 +107,10 @@ defmodule QlockWeb.Layouts do
         <div class="navbar bg-base-100 border-b border-base-300 lg:hidden sticky top-0 z-30">
           <div class="flex gap-2">
             <.link navigate={~p"/"} class="btn btn-ghost btn-square btn-sm">
-              <.icon name="hero-home" class="size-5" />
+              <.icon name="ri-home-line" class="size-5" />
             </.link>
             <.link navigate={~p"/projects"} class="btn btn-ghost btn-square btn-sm">
-              <.icon name="hero-folder" class="size-5" />
+              <.icon name="ri-folder-line" class="size-5" />
             </.link>
           </div>
           <span class="font-bold ml-2">Qlock</span>
@@ -151,7 +151,7 @@ defmodule QlockWeb.Layouts do
         hidden
       >
         {gettext("Attempting to reconnect")}
-        <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
+        <.icon name="ri-loader-4-line" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
 
       <.flash
@@ -163,7 +163,7 @@ defmodule QlockWeb.Layouts do
         hidden
       >
         {gettext("Attempting to reconnect")}
-        <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
+        <.icon name="ri-loader-4-line" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
     </div>
     """
@@ -210,7 +210,7 @@ defmodule QlockWeb.Layouts do
             href={~p"/sign-out"}
             class="btn btn-error btn-outline w-full gap-2"
           >
-            <.icon name="hero-arrow-right-on-rectangle" class="size-4" />
+            <.icon name="ri-logout-box-r-line" class="size-4" />
             Sign out
           </.link>
 
@@ -237,7 +237,7 @@ defmodule QlockWeb.Layouts do
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
       >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="ri-computer-line" class="size-4 opacity-75 hover:opacity-100" />
       </button>
 
       <button
@@ -245,7 +245,7 @@ defmodule QlockWeb.Layouts do
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="light"
       >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="ri-sun-line" class="size-4 opacity-75 hover:opacity-100" />
       </button>
 
       <button
@@ -253,7 +253,7 @@ defmodule QlockWeb.Layouts do
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="dark"
       >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="ri-moon-line" class="size-4 opacity-75 hover:opacity-100" />
       </button>
     </div>
     """

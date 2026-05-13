@@ -2,14 +2,12 @@
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss" source(none);
+@import "remixicon/fonts/remixicon.css";
 @source "../../deps/ash_authentication_phoenix";
 @source "../css";
 @source "../js";
 @source "../../lib/qlock_web";
 
-/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
-   The heroicons installation itself is managed by your mix.exs */
-@plugin "../vendor/heroicons";
 
 @plugin "daisyui" {
   themes: false;

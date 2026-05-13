@@ -5,10 +5,11 @@
     "dev": "WATCH_STDIN=1 vite"
   },
   "dependencies": {
-    "daisyui": "^5.0.0",
+    "daisyui": "^5.5.19",
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html",
     "phoenix_live_view": "file:../deps/phoenix_live_view",
+    "remixicon": "^4.9.1",
     "topbar": "^3.0.1"
   },
   "devDependencies": {
