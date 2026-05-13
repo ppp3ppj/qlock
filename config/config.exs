@@ -28,6 +28,12 @@ config :ash,
   transaction_rollback_on_error?: true,
   redact_sensitive_values_in_errors?: true
 
+config :bun,
+  version: "1.1.38",
+  qlock: [
+    cd: Path.expand("../assets", __DIR__)
+  ]
+
 config :spark,
   formatter: [
     remove_parens?: true,
