@@ -3,11 +3,26 @@ defmodule Qlock.TimeTracking.TimeEntry do
     otp_app: :qlock,
     domain: Qlock.TimeTracking,
     data_layer: AshSqlite.DataLayer,
-    authorizers: [Ash.Policy.Authorizer]
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshJsonApi.Resource]
 
   sqlite do
     table "time_entries"
     repo Qlock.Repo
+  end
+
+  json_api do
+    type "time_entry"
+
+    routes do
+      base "/time-entries"
+
+      index :read
+      get :read
+      post :create
+      patch :update
+      delete :destroy
+    end
   end
 
   actions do

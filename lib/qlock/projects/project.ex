@@ -3,11 +3,23 @@ defmodule Qlock.Projects.Project do
     otp_app: :qlock,
     domain: Qlock.Projects,
     data_layer: AshSqlite.DataLayer,
-    authorizers: [Ash.Policy.Authorizer]
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshJsonApi.Resource]
 
   sqlite do
     table "projects"
     repo Qlock.Repo
+  end
+
+  json_api do
+    type "project"
+
+    routes do
+      base "/projects"
+
+      index :read
+      get :read
+    end
   end
 
   actions do

@@ -1,5 +1,5 @@
 defmodule Qlock.Projects do
-  use Ash.Domain, otp_app: :qlock, extensions: [AshAdmin.Domain]
+  use Ash.Domain, otp_app: :qlock, extensions: [AshAdmin.Domain, AshJsonApi.Domain]
 
   admin do
     show? true
