@@ -2,6 +2,8 @@ defmodule QlockWeb.PageController do
   use QlockWeb, :controller
 
   def home(conn, _params) do
-    render(conn, :home, current_page: :home)
+    conn
+    |> put_layout(html: false)
+    |> render(:home, current_page: :home)
   end
 end
