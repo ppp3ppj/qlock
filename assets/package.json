@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "WATCH_STDIN=1 vite"
+  },
+  "devDependencies": {
+  }
+}

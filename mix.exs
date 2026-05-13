@@ -79,7 +79,8 @@ defmodule Qlock.MixProject do
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:bun, "~> 2.0", runtime: Mix.env() == :dev},
     ]
   end
 
@@ -95,11 +96,16 @@ defmodule Qlock.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ash.setup --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["compile", "tailwind qlock", "esbuild qlock"],
+      "assets.setup": [
+        "tailwind.install --if-missing",
+        "esbuild.install --if-missing",
+        "bun.install --if-missing",
+        "bun qlock install"
+      ],
+      "assets.build": ["compile", "tailwind qlock", "bun qlock run build"],
       "assets.deploy": [
         "tailwind qlock --minify",
-        "esbuild qlock --minify",
+        "bun qlock run build",
         "phx.digest"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"],
