@@ -2,7 +2,6 @@
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss" source(none);
-@import "remixicon/fonts/remixicon.css";
 @source "../../deps/ash_authentication_phoenix";
 @source "../css";
 @source "../js";
@@ -48,7 +47,7 @@
   --noise: 0;
 }
 
-@plugin "../vendor/daisyui-theme" {
+@plugin "daisyui/theme" {
   name: "light";
   default: true;
   prefersdark: false;

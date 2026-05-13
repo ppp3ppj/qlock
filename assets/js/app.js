@@ -19,6 +19,8 @@
 
 // CSS entry — Vite + @tailwindcss/vite processes this file
 import "../css/app.css"
+// Remixicon font — Vite dev server resolves and serves the woff2 from node_modules
+import "remixicon/fonts/remixicon.css"
 
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html"

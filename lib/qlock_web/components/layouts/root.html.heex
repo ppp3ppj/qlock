@@ -7,9 +7,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
     <.live_title default="Qlock" suffix=" · Phoenix Framework" phx-no-format>{assigns[:page_title]}</.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
-    </script>
+    <%= if Application.get_env(:qlock, :dev_routes) do %>
+      <script phx-track-static type="module" src="http://localhost:4432/@vite/client">
+      </script>
+      <link phx-track-static rel="stylesheet" href="http://localhost:4432/css/app.css" />
+      <link rel="modulepreload" href="http://localhost:4432/js/app.js" />
+      <script phx-track-static type="module" src="http://localhost:4432/js/app.js">
+      </script>
+    <% else %>
+      <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+      <link rel="modulepreload" href={~p"/assets/app.js"} />
+      <script phx-track-static type="module" src={~p"/assets/app.js"}>
+      </script>
+    <% end %>
     <script>
       (() => {
         const setTheme = (theme) => {
