@@ -1,0 +1,27 @@
+meta {
+  name: List Categories
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/json/categories
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Accept: application/vnd.api+json
+}
+
+query {
+  ~filter[project_id]: <project-uuid>
+}
+
+docs {
+  Filter by project: add ?filter[project_id]=<uuid> to get categories for a specific project.
+}

@@ -1,0 +1,28 @@
+meta {
+  name: List Time Entries
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/json/time-entries
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Accept: application/vnd.api+json
+}
+
+query {
+  ~filter[date]: 2026-05-13
+}
+
+docs {
+  Filter by date: add ?filter[date]=YYYY-MM-DD
+  Filter by project: add ?filter[project_id]=<uuid>
+}

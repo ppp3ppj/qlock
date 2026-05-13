@@ -3,11 +3,23 @@ defmodule Qlock.Projects.Category do
     otp_app: :qlock,
     domain: Qlock.Projects,
     data_layer: AshSqlite.DataLayer,
-    authorizers: [Ash.Policy.Authorizer]
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshJsonApi.Resource]
 
   sqlite do
     table "categories"
     repo Qlock.Repo
+  end
+
+  json_api do
+    type "category"
+
+    routes do
+      base "/categories"
+
+      index :read
+      get :read
+    end
   end
 
   actions do
