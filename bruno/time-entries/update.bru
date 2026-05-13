@@ -1,0 +1,38 @@
+meta {
+  name: Update Time Entry
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/api/json/time-entries/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/vnd.api+json
+  Accept: application/vnd.api+json
+}
+
+params:path {
+  id: <time-entry-uuid>
+}
+
+body:json {
+  {
+    "data": {
+      "type": "time_entry",
+      "id": "<time-entry-uuid>",
+      "attributes": {
+        "task_name": "Updated task name",
+        "duration_minutes": 120,
+        "overtime": true
+      }
+    }
+  }
+}

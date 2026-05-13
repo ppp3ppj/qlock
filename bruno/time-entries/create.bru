@@ -1,0 +1,42 @@
+meta {
+  name: Create Time Entry
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/json/time-entries
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/vnd.api+json
+  Accept: application/vnd.api+json
+}
+
+body:json {
+  {
+    "data": {
+      "type": "time_entry",
+      "attributes": {
+        "task_name": "Backend API development",
+        "duration_minutes": 90,
+        "date": "2026-05-13",
+        "overtime": false,
+        "project_id": null,
+        "category_id": null
+      }
+    }
+  }
+}
+
+docs {
+  duration_minutes: total minutes (e.g. 90 = 1h 30m)
+  date: YYYY-MM-DD format
+  project_id / category_id: UUID or null
+}

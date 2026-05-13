@@ -1,0 +1,23 @@
+meta {
+  name: List Projects
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/json/projects
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Accept: application/vnd.api+json
+}
+
+docs {
+  Returns only projects the authenticated user owns or is a member of.
+}

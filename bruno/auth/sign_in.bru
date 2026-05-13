@@ -1,0 +1,36 @@
+meta {
+  name: Sign In
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/json/users/sign_in
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/vnd.api+json
+  Accept: application/vnd.api+json
+}
+
+body:json {
+  {
+    "data": {
+      "email": "ppp@p.com",
+      "password": "34123412"
+    }
+  }
+}
+
+script:post-response {
+  var raw = res.getBody();
+  var body = typeof raw === "string" ? JSON.parse(raw) : raw;
+  if (body && body.token) {
+    bru.setEnvVar("token", body.token);
+    console.log("Token saved");
+  } else {
+    console.log("No token found:", JSON.stringify(body));
+  }
+}

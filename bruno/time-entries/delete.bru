@@ -1,0 +1,23 @@
+meta {
+  name: Delete Time Entry
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/json/time-entries/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Accept: application/vnd.api+json
+}
+
+params:path {
+  id: <time-entry-uuid>
+}
