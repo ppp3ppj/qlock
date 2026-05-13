@@ -63,8 +63,6 @@ defmodule Qlock.MixProject do
       {:phoenix_live_view, "~> 1.1.0"},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
       {:heroicons,
        github: "tailwindlabs/heroicons",
        tag: "v2.2.0",
@@ -96,18 +94,9 @@ defmodule Qlock.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ash.setup --quiet", "test"],
-      "assets.setup": [
-        "tailwind.install --if-missing",
-        "esbuild.install --if-missing",
-        "bun.install --if-missing",
-        "bun qlock install"
-      ],
-      "assets.build": ["compile", "tailwind qlock", "bun qlock run build"],
-      "assets.deploy": [
-        "tailwind qlock --minify",
-        "bun qlock run build",
-        "phx.digest"
-      ],
+      "assets.setup": ["bun.install --if-missing", "bun qlock install"],
+      "assets.build": ["compile", "bun qlock run build"],
+      "assets.deploy": ["bun qlock run build", "phx.digest"],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"],
       "ash.setup": ["ash.setup", "run priv/repo/seeds.exs"]
     ]
