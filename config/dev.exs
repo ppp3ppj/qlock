@@ -25,8 +25,7 @@ config :qlock, QlockWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "AfOdvkHrM/3rjbq2XPSra6rA3kW7qD3G63cGClVZgTDkbXV9RpihbhdPOcevjIfF",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:qlock, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:qlock, ~w(--watch)]}
+    bun: {Bun, :install_and_run, [:qlock, ~w(run dev)]}
   ]
 
 # ## SSL Support

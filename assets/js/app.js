@@ -17,19 +17,26 @@
 // If you have dependencies that try to import CSS, esbuild will generate a separate `app.css` file.
 // To load it, simply add a second `<link>` to your `root.html.heex` file.
 
+// CSS entry — Vite + @tailwindcss/vite processes this file
+import "../css/app.css"
+// Remixicon font — Vite dev server resolves and serves the woff2 from node_modules
+import "remixicon/fonts/remixicon.css"
+// Inter font from Fontsource
+import "@fontsource/inter"
+
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html"
 // Establish Phoenix Socket and LiveView configuration.
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
-import {hooks as colocatedHooks} from "phoenix-colocated/qlock"
-import topbar from "../vendor/topbar"
+import topbar from "topbar"
+import Hooks from "./hooks"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: Hooks,
 })
 
 // Show progress bar on live navigation and form submits

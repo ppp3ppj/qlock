@@ -79,7 +79,7 @@ defmodule QlockWeb.TimeTrackingLive do
 
   @impl true
   def handle_event("next_day", _params, socket) do
-    if socket.assigns.selected_date >= Date.utc_today() do
+    if Date.compare(socket.assigns.selected_date, Date.utc_today()) != :lt do
       {:noreply, socket}
     else
       date = Date.add(socket.assigns.selected_date, 1)
@@ -243,7 +243,7 @@ defmodule QlockWeb.TimeTrackingLive do
           <% is_today = @selected_date == Date.utc_today() %>
           <div class="flex items-center justify-between py-4 border-b border-base-300 mb-4">
             <button phx-click="prev_day" class="btn btn-ghost btn-sm btn-square">
-              <.icon name="hero-chevron-left" class="size-5" />
+              <.icon name="ri-arrow-left-s-line" class="size-5" />
             </button>
             <span class="font-semibold text-base">{format_date(@selected_date)}</span>
             <button
@@ -251,13 +251,13 @@ defmodule QlockWeb.TimeTrackingLive do
               class="btn btn-ghost btn-sm btn-square"
               disabled={is_today}
             >
-              <.icon name="hero-chevron-right" class="size-5" />
+              <.icon name="ri-arrow-right-s-line" class="size-5" />
             </button>
           </div>
 
           <div :if={is_today} class="mb-4">
             <.link navigate={~p"/time/new"} class="btn btn-primary btn-sm gap-2">
-              <.icon name="hero-plus" class="size-4" /> Add Entry
+              <.icon name="ri-add-line" class="size-4" /> Add Entry
             </.link>
           </div>
 
@@ -280,7 +280,7 @@ defmodule QlockWeb.TimeTrackingLive do
                   {format_duration(entry.duration_minutes)}
                 </span>
                 <.link navigate={~p"/time/#{entry.id}/edit"} class="btn btn-ghost btn-xs">
-                  <.icon name="hero-pencil" class="size-3.5" />
+                  <.icon name="ri-pencil-line" class="size-3.5" />
                 </.link>
                 <button
                   phx-click="delete_entry"
@@ -288,20 +288,20 @@ defmodule QlockWeb.TimeTrackingLive do
                   data-confirm="Delete this entry?"
                   class="btn btn-ghost btn-xs text-error"
                 >
-                  <.icon name="hero-trash" class="size-3.5" />
+                  <.icon name="ri-delete-bin-line" class="size-3.5" />
                 </button>
               </div>
             </div>
 
             <div :if={@entries == []} class="flex flex-col items-center justify-center py-20 gap-3 text-base-content/30">
-              <.icon name="hero-clock" class="size-14" />
+              <.icon name="ri-time-line" class="size-14" />
               <p class="text-sm">No time tracked for this day</p>
             </div>
           </div>
 
           <div class="flex items-center pt-4 mt-4 border-t border-base-300">
             <button phx-click="today" class="flex items-center gap-1.5 text-sm text-base-content/60 hover:text-base-content transition-colors">
-              <.icon name="hero-calendar" class="size-4" /> Today
+              <.icon name="ri-calendar-line" class="size-4" /> Today
             </button>
           </div>
 
@@ -309,7 +309,7 @@ defmodule QlockWeb.TimeTrackingLive do
           <%!-- New / Edit form page --%>
           <div class="py-4 border-b border-base-300 mb-6 flex items-center gap-3">
             <.link navigate={~p"/time"} class="btn btn-ghost btn-sm btn-square">
-              <.icon name="hero-arrow-left" class="size-4" />
+              <.icon name="ri-arrow-left-line" class="size-4" />
             </.link>
             <h1 class="font-semibold text-base">
               {if @live_action == :new, do: "New Entry", else: "Edit Entry"}
