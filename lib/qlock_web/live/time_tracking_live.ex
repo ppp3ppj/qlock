@@ -79,7 +79,7 @@ defmodule QlockWeb.TimeTrackingLive do
 
   @impl true
   def handle_event("next_day", _params, socket) do
-    if socket.assigns.selected_date >= Date.utc_today() do
+    if Date.compare(socket.assigns.selected_date, Date.utc_today()) != :lt do
       {:noreply, socket}
     else
       date = Date.add(socket.assigns.selected_date, 1)
