@@ -75,7 +75,9 @@ defmodule Qlock.TimeTracking.TimeEntry do
       public? true
     end
 
-    timestamps()
+    # Exposed publicly so the sync client can use them for LWW and delta pull
+    create_timestamp :inserted_at, public?: true
+    update_timestamp :updated_at, public?: true
   end
 
   relationships do
