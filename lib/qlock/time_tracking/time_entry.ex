@@ -29,7 +29,7 @@ defmodule Qlock.TimeTracking.TimeEntry do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:task_name, :duration_minutes, :date, :overtime, :project_id, :category_id]
+      accept [:id, :task_name, :duration_minutes, :date, :overtime, :project_id, :category_id]
       change relate_actor(:user)
     end
 
@@ -53,7 +53,7 @@ defmodule Qlock.TimeTracking.TimeEntry do
   end
 
   attributes do
-    uuid_primary_key :id
+    uuid_primary_key :id, writable?: true
 
     attribute :task_name, :string do
       allow_nil? false
