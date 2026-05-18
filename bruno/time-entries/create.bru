@@ -25,7 +25,7 @@ body:json {
       "type": "time_entry",
       "attributes": {
         "task_name": "Backend API development",
-        "duration_minutes": 90,
+        "duration_seconds": 5400,
         "date": "2026-05-13",
         "overtime": false,
         "project_id": null,
@@ -36,7 +36,7 @@ body:json {
 }
 
 docs {
-  duration_minutes: total minutes (e.g. 90 = 1h 30m)
+  duration_seconds: total seconds (e.g. 5400 = 1h 30m, 337 = 5m 37s)
   date: YYYY-MM-DD format
   project_id / category_id: UUID or null
 }
