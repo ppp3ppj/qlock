@@ -28,11 +28,12 @@ defmodule Mix.Tasks.Qlock.PromoteAdmin do
   end
 
   defp find_and_promote(email) do
-    case Ash.get(Qlock.Accounts.User, %{email: email},
-           action: :get_by_email,
-           domain: Qlock.Accounts,
-           authorize?: false
-         ) do
+    result =
+      Qlock.Accounts.User
+      |> Ash.Query.for_read(:get_by_email, %{email: email})
+      |> Ash.read_one(domain: Qlock.Accounts, authorize?: false)
+
+    case result do
       {:ok, nil} ->
         Mix.shell().error("No user found with email: #{email}")
         exit({:shutdown, 1})
