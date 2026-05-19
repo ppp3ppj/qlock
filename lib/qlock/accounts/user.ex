@@ -9,6 +9,7 @@ defmodule Qlock.Accounts.User do
   sqlite do
     table "users"
     repo Qlock.Repo
+    migration_defaults role: "'user'"
   end
 
   json_api do
@@ -66,6 +67,12 @@ defmodule Qlock.Accounts.User do
 
   actions do
     defaults [:read]
+
+    update :promote_to_admin do
+      require_atomic? false
+      accept []
+      change set_attribute(:role, :admin)
+    end
 
     read :get_by_subject do
       description "Get a user by the subject claim in a JWT"
@@ -278,6 +285,10 @@ defmodule Qlock.Accounts.User do
     policy action_type(:read) do
       authorize_if actor_present()
     end
+
+    policy action(:promote_to_admin) do
+      authorize_if actor_attribute_equals(:role, :admin)
+    end
   end
 
   attributes do
@@ -291,6 +302,13 @@ defmodule Qlock.Accounts.User do
     attribute :hashed_password, :string do
       allow_nil? false
       sensitive? true
+    end
+
+    attribute :role, :atom do
+      constraints one_of: [:user, :admin]
+      default :user
+      allow_nil? false
+      public? false
     end
 
     attribute :confirmed_at, :utc_datetime_usec
