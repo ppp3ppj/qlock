@@ -282,6 +282,7 @@ defmodule QlockWeb.TimeTrackingLive do
                 <span :if={entry.overtime} class="badge badge-warning badge-sm">OT</span>
                 <span class="font-mono text-sm font-semibold">
                   {format_duration(entry.duration_seconds)}
+                  <span class="text-xs font-normal opacity-40 ml-1">({entry.duration_seconds}s)</span>
                 </span>
                 <.link navigate={~p"/time/#{entry.id}/edit"} class="btn btn-ghost btn-xs">
                   <.icon name="ri-pencil-line" class="size-3.5" />
