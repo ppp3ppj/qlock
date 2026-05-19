@@ -64,7 +64,7 @@ defmodule QlockWeb.TimeTrackingLive do
     assign(socket,
       form: to_form(%{form | errors: true}),
       categories: categories,
-      raw_duration: format_duration(entry.duration_minutes),
+      raw_duration: format_duration(entry.duration_seconds),
       duration_error: nil
     )
   end
@@ -103,9 +103,9 @@ defmodule QlockWeb.TimeTrackingLive do
         id -> load_categories(id)
       end
 
-    raw = Map.get(params, "duration_minutes", "")
+    raw = Map.get(params, "duration_seconds", "")
     {parsed, duration_error} = validate_duration(raw)
-    params = Map.put(params, "duration_minutes", parsed)
+    params = Map.put(params, "duration_seconds", parsed)
 
     form =
       socket.assigns.form.source
@@ -118,7 +118,7 @@ defmodule QlockWeb.TimeTrackingLive do
 
   @impl true
   def handle_event("save_entry", %{"entry" => params}, socket) do
-    raw = Map.get(params, "duration_minutes", "")
+    raw = Map.get(params, "duration_seconds", "")
     {parsed, duration_error} = validate_duration(raw)
 
     date_error =
@@ -133,7 +133,7 @@ defmodule QlockWeb.TimeTrackingLive do
       duration_error ->
         form =
           socket.assigns.form.source
-          |> AshPhoenix.Form.validate(Map.put(params, "duration_minutes", nil))
+          |> AshPhoenix.Form.validate(Map.put(params, "duration_seconds", nil))
           |> Map.put(:errors, true)
           |> to_form()
 
@@ -152,7 +152,7 @@ defmodule QlockWeb.TimeTrackingLive do
          |> put_flash(:error, "Date #{date_error}")}
 
       true ->
-        params = Map.put(params, "duration_minutes", parsed)
+        params = Map.put(params, "duration_seconds", parsed)
 
         case AshPhoenix.Form.submit(socket.assigns.form.source, params: params) do
           {:ok, _entry} ->
@@ -191,7 +191,8 @@ defmodule QlockWeb.TimeTrackingLive do
     |> Ash.read!(domain: Qlock.Projects, authorize?: false)
   end
 
-  # Returns {minutes_string, nil} on success or {nil, error_message} on failure.
+  # Returns {seconds_string, nil} on success or {nil, error_message} on failure.
+  # User input: "H:MM" (hours:minutes) or a plain integer (minutes).
   defp validate_duration(""), do: {nil, "can't be blank"}
 
   defp validate_duration(str) do
@@ -208,14 +209,14 @@ defmodule QlockWeb.TimeTrackingLive do
           with {:ok, h} <- parse_int.(h_str),
                {:ok, m} <- parse_int.(m_str),
                true <- m in 0..59 do
-            {:ok, "#{h * 60 + m}"}
+            {:ok, "#{(h * 60 + m) * 60}"}
           else
             _ -> :invalid
           end
 
         [h_str] ->
           case parse_int.(h_str) do
-            {:ok, h} -> {:ok, "#{h * 60}"}
+            {:ok, m} -> {:ok, "#{m * 60}"}  # treat plain number as minutes → convert to seconds
             _ -> :invalid
           end
       end
@@ -226,8 +227,11 @@ defmodule QlockWeb.TimeTrackingLive do
     end
   end
 
-  defp format_duration(minutes) do
-    "#{div(minutes, 60)}:#{String.pad_leading("#{rem(minutes, 60)}", 2, "0")}"
+  defp format_duration(seconds) do
+    total_minutes = div(seconds, 60)
+    h = div(total_minutes, 60)
+    m = rem(total_minutes, 60)
+    "#{h}:#{String.pad_leading("#{m}", 2, "0")}"
   end
 
   defp format_date(date), do: Calendar.strftime(date, "%d %B %Y")
@@ -277,7 +281,8 @@ defmodule QlockWeb.TimeTrackingLive do
               <div class="flex items-center gap-2 shrink-0">
                 <span :if={entry.overtime} class="badge badge-warning badge-sm">OT</span>
                 <span class="font-mono text-sm font-semibold">
-                  {format_duration(entry.duration_minutes)}
+                  {format_duration(entry.duration_seconds)}
+                  <span class="text-xs font-normal opacity-40 ml-1">({entry.duration_seconds}s)</span>
                 </span>
                 <.link navigate={~p"/time/#{entry.id}/edit"} class="btn btn-ghost btn-xs">
                   <.icon name="ri-pencil-line" class="size-3.5" />
@@ -336,7 +341,7 @@ defmodule QlockWeb.TimeTrackingLive do
                 <label class="label"><span class="label-text">Time (H:MM)</span></label>
                 <input
                   type="text"
-                  name="entry[duration_minutes]"
+                  name="entry[duration_seconds]"
                   value={@raw_duration}
                   class={["input input-bordered w-full", @duration_error && "input-error"]}
                   placeholder="1:30"

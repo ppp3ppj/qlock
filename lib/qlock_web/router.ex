@@ -52,6 +52,9 @@ defmodule QlockWeb.Router do
       path: "/api/json/open_api",
       default_model_expand_depth: 4
 
+    # Bulk create must be declared before the catch-all AshJsonApi forward
+    post "/time-entries/bulk", QlockWeb.BulkTimeEntriesController, :create
+
     forward "/", QlockWeb.AshJsonApiRouter
   end
 

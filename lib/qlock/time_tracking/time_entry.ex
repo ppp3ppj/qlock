@@ -29,12 +29,12 @@ defmodule Qlock.TimeTracking.TimeEntry do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:task_name, :duration_minutes, :date, :overtime, :project_id, :category_id]
+      accept [:id, :task_name, :duration_seconds, :date, :overtime, :project_id, :category_id]
       change relate_actor(:user)
     end
 
     update :update do
-      accept [:task_name, :duration_minutes, :date, :overtime, :project_id, :category_id]
+      accept [:task_name, :duration_seconds, :date, :overtime, :project_id, :category_id]
     end
   end
 
@@ -53,14 +53,14 @@ defmodule Qlock.TimeTracking.TimeEntry do
   end
 
   attributes do
-    uuid_primary_key :id
+    uuid_primary_key :id, writable?: true
 
     attribute :task_name, :string do
       allow_nil? false
       public? true
     end
 
-    attribute :duration_minutes, :integer do
+    attribute :duration_seconds, :integer do
       allow_nil? false
       public? true
     end
@@ -75,7 +75,9 @@ defmodule Qlock.TimeTracking.TimeEntry do
       public? true
     end
 
-    timestamps()
+    # Exposed publicly so the sync client can use them for LWW and delta pull
+    create_timestamp :inserted_at, public?: true
+    update_timestamp :updated_at, public?: true
   end
 
   relationships do
