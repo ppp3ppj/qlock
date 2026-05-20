@@ -23,13 +23,17 @@ defmodule Qlock.Projects.Project do
   end
 
   actions do
-    defaults [:read, :update, :destroy]
+    defaults [:read, :destroy]
 
     create :create do
       accept [:name]
       # Automatically sets user_id from the authenticated actor,
       # so callers never need to pass it manually.
       change relate_actor(:user)
+    end
+
+    update :update do
+      accept [:name, :description]
     end
 
     # Deletes all related categories first, then removes the project.
@@ -62,6 +66,11 @@ defmodule Qlock.Projects.Project do
 
     attribute :name, :string do
       allow_nil? false
+      public? true
+    end
+
+    attribute :description, :string do
+      allow_nil? true
       public? true
     end
 
