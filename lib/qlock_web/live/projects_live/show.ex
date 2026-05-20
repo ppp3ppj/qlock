@@ -233,7 +233,7 @@ defmodule QlockWeb.ProjectsLive.Show do
             <h1
               :if={!@editing_project_name}
               phx-click="edit_project_name"
-              class="text-3xl font-semibold cursor-text px-1 -mx-1 rounded hover:bg-base-200 transition-colors"
+              class="flex-1 text-3xl font-semibold cursor-text px-1 -mx-1 rounded hover:bg-base-200 transition-colors"
             >
               {@project.name}
             </h1>
@@ -246,7 +246,7 @@ defmodule QlockWeb.ProjectsLive.Show do
               phx-blur="save_project_name"
               phx-keydown="keydown_project_name"
               phx-hook="AutoFocus"
-              class="text-3xl font-semibold w-full bg-transparent border-b-2 border-primary outline-none px-1 -mx-1"
+              class="flex-1 text-3xl font-semibold bg-transparent border-b-2 border-primary outline-none px-1 -mx-1"
             />
 
             <.link navigate={~p"/projects"} class="btn btn-ghost btn-sm shrink-0 mt-1">
@@ -325,7 +325,7 @@ defmodule QlockWeb.ProjectsLive.Show do
                 :if={@editing_category_id != category.id}
                 phx-click="edit_category"
                 phx-value-id={category.id}
-                class="text-lg font-semibold cursor-text px-1 -mx-1 rounded hover:bg-base-200 transition-colors"
+                class="flex-1 text-lg font-semibold cursor-text px-1 -mx-1 rounded hover:bg-base-200 transition-colors"
               >
                 {category.name}
               </h2>
@@ -340,7 +340,7 @@ defmodule QlockWeb.ProjectsLive.Show do
                 phx-keydown="keydown_category_name"
                 phx-value-id={category.id}
                 phx-hook="AutoFocus"
-                class="text-lg font-semibold w-full bg-transparent border-b-2 border-primary outline-none px-1 -mx-1"
+                class="flex-1 text-lg font-semibold bg-transparent border-b-2 border-primary outline-none px-1 -mx-1"
               />
 
               <button

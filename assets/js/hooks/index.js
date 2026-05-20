@@ -17,12 +17,9 @@
 const AutoFocus = {
   mounted() {
     this.el.focus()
-    // Select all for single-line inputs, move to end for textareas
-    if (this.el.tagName === "TEXTAREA") {
-      this.el.setSelectionRange(this.el.value.length, this.el.value.length)
-    } else {
-      this.el.select()
-    }
+    // Move cursor to end (same as Livebook headline behavior)
+    const len = this.el.value.length
+    this.el.setSelectionRange(len, len)
   }
 }
 
