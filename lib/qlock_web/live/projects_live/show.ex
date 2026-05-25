@@ -19,7 +19,9 @@ defmodule QlockWeb.ProjectsLive.Show do
        show_form: false,
        editing_category_id: nil,
        editing_category_desc_id: nil,
-       show_member_form: false
+       show_member_picker: false,
+       member_search: "",
+       member_search_results: []
      )}
   end
 
@@ -167,39 +169,35 @@ defmodule QlockWeb.ProjectsLive.Show do
 
   # --- Members ---
 
-  def handle_event("show_member_form", _, socket),
-    do: {:noreply, assign(socket, show_member_form: true)}
+  def handle_event("show_member_picker", _, socket) do
+    results = non_members(socket.assigns.project, "")
+    {:noreply, assign(socket, show_member_picker: true, member_search: "", member_search_results: results)}
+  end
 
-  def handle_event("cancel_member", _, socket),
-    do: {:noreply, assign(socket, show_member_form: false)}
+  def handle_event("hide_member_picker", _, socket),
+    do: {:noreply, assign(socket, show_member_picker: false, member_search: "", member_search_results: [])}
 
-  def handle_event("add_member", %{"email" => email}, socket) do
+  def handle_event("search_members", %{"value" => q}, socket) do
+    results = non_members(socket.assigns.project, q)
+    {:noreply, assign(socket, member_search: q, member_search_results: results)}
+  end
+
+  def handle_event("add_member_by_id", %{"id" => user_id}, socket) do
     project = socket.assigns.project
 
-    case Qlock.Accounts.User
-         |> Ash.Query.for_read(:get_by_email, %{email: email})
-         |> Ash.read_one(domain: Qlock.Accounts, authorize?: false) do
-      {:ok, nil} ->
-        {:noreply, put_flash(socket, :error, "No user found with email #{email}")}
-
-      {:ok, user} ->
-        ProjectMember
-        |> Ash.Changeset.for_create(:create, %{project_id: project.id, user_id: user.id},
-          actor: socket.assigns.current_user
-        )
-        |> Ash.create(domain: Projects)
-        |> case do
-          {:ok, _} ->
-            project = load_project(project.id, socket.assigns.current_user)
-            {:noreply, assign(socket, project: project, show_member_form: false)}
-
-          {:error, _} ->
-            {:noreply,
-             put_flash(socket, :error, "Could not add member — they may already be a member")}
-        end
+    ProjectMember
+    |> Ash.Changeset.for_create(:create, %{project_id: project.id, user_id: user_id},
+      actor: socket.assigns.current_user
+    )
+    |> Ash.create(domain: Projects)
+    |> case do
+      {:ok, _} ->
+        project = load_project(project.id, socket.assigns.current_user)
+        results = non_members(project, socket.assigns.member_search)
+        {:noreply, assign(socket, project: project, member_search_results: results)}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "No user found with email #{email}")}
+        {:noreply, put_flash(socket, :error, "Could not add member")}
     end
   end
 
@@ -209,6 +207,32 @@ defmodule QlockWeb.ProjectsLive.Show do
 
     project = load_project(socket.assigns.project.id, socket.assigns.current_user)
     {:noreply, assign(socket, project: project)}
+  end
+
+  defp non_members(project, search) do
+    member_user_ids = MapSet.new(project.project_members, & &1.user_id)
+
+    {:ok, all_users} = Ash.read(Qlock.Accounts.User, domain: Qlock.Accounts, authorize?: false)
+
+    q = String.downcase(search)
+
+    all_users
+    |> Enum.reject(&MapSet.member?(member_user_ids, &1.id))
+    |> Enum.filter(&String.contains?(String.downcase(to_string(&1.email)), q))
+    |> Enum.take(8)
+  end
+
+  @avatar_colors ~w[#e74c3c #e67e22 #f39c12 #27ae60 #16a085
+                    #2980b9 #8e44ad #c0392b #1abc9c #d35400
+                    #3498db #2ecc71]
+
+  defp avatar_color(email) do
+    idx = :erlang.phash2(to_string(email), length(@avatar_colors))
+    Enum.at(@avatar_colors, idx)
+  end
+
+  defp initials(email) do
+    email |> to_string() |> String.split("@") |> List.first() |> String.first() |> String.upcase()
   end
 
   defp load_project(id, actor) do
@@ -394,46 +418,51 @@ defmodule QlockWeb.ProjectsLive.Show do
         <%!-- Members --%>
         <div class="space-y-4 border-t border-base-300 pt-8">
           <div class="flex items-center justify-between">
-            <p class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
-              Members
-            </p>
+            <div class="flex items-center gap-3">
+              <p class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+                Members
+              </p>
+              <span class="flex items-center gap-1.5 text-xs bg-base-200 px-2 py-0.5 rounded-full">
+                <span class="w-2 h-2 bg-success rounded-full inline-block"></span>
+                {length(@project.project_members)}
+              </span>
+            </div>
             <button
-              :if={!@show_member_form}
-              phx-click="show_member_form"
+              :if={!@show_member_picker}
+              phx-click="show_member_picker"
               class="btn btn-ghost btn-sm gap-1"
             >
               <.icon name="ri-user-add-line" class="size-4" /> Add Member
             </button>
+            <button
+              :if={@show_member_picker}
+              phx-click="hide_member_picker"
+              class="btn btn-ghost btn-sm"
+            >
+              Done
+            </button>
           </div>
 
-          <div :if={@show_member_form} class="card bg-base-200 p-4">
-            <form phx-submit="add_member" class="flex gap-2 items-end">
-              <div class="form-control flex-1">
-                <label class="label"><span class="label-text">User Email</span></label>
-                <input
-                  type="email"
-                  name="email"
-                  class="input input-bordered w-full"
-                  placeholder="user@example.com"
-                  required
-                  autofocus
-                />
-              </div>
-              <button type="submit" class="btn btn-primary">Add</button>
-              <button type="button" phx-click="cancel_member" class="btn">Cancel</button>
-            </form>
-          </div>
-
+          <%!-- Member list --%>
           <div class="space-y-1">
             <div
               :for={member <- @project.project_members}
               class="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-base-200 group"
             >
               <div class="flex items-center gap-3">
-                <div class="bg-primary text-primary-content rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold shrink-0">
-                  {String.first(to_string(member.user.email)) |> String.upcase()}
+                <div
+                  class="rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold shrink-0 text-white"
+                  style={"background-color: #{avatar_color(member.user.email)}"}
+                >
+                  {initials(member.user.email)}
                 </div>
                 <span class="text-sm">{to_string(member.user.email)}</span>
+                <span
+                  :if={member.user_id == @current_user.id}
+                  class="text-xs text-base-content/40"
+                >
+                  (you)
+                </span>
               </div>
               <button
                 phx-click="remove_member"
@@ -451,6 +480,43 @@ defmodule QlockWeb.ProjectsLive.Show do
             >
               No members yet.
             </p>
+          </div>
+
+          <%!-- User picker --%>
+          <div :if={@show_member_picker} class="border border-base-300 rounded-xl overflow-hidden">
+            <div class="p-3 border-b border-base-300">
+              <input
+                id="member-search"
+                type="text"
+                value={@member_search}
+                phx-keyup="search_members"
+                phx-debounce="200"
+                placeholder="Search users..."
+                class="input input-bordered input-sm w-full"
+                phx-hook="AutoFocus"
+              />
+            </div>
+
+            <div :if={@member_search_results == []} class="px-4 py-6 text-center text-sm text-base-content/40">
+              {if @member_search == "", do: "All users are already members", else: "No users found"}
+            </div>
+
+            <div :if={@member_search_results != []}>
+              <button
+                :for={user <- @member_search_results}
+                phx-click="add_member_by_id"
+                phx-value-id={user.id}
+                class="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-base-200 transition-colors text-left"
+              >
+                <div
+                  class="rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold shrink-0 text-white"
+                  style={"background-color: #{avatar_color(user.email)}"}
+                >
+                  {initials(user.email)}
+                </div>
+                <span class="text-sm">{to_string(user.email)}</span>
+              </button>
+            </div>
           </div>
         </div>
 
