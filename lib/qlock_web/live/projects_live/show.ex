@@ -247,7 +247,57 @@ defmodule QlockWeb.ProjectsLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_page={:projects} current_user={@current_user}>
-      <div class="relative w-full max-w-[65rem] px-4 sm:pl-8 sm:pr-16 md:pl-16 pt-4 sm:py-5 mx-auto space-y-10">
+      <%!-- Drawer: section/TOC navigation for this project --%>
+      <:drawer>
+        <div class="p-4 space-y-1">
+          <p class="text-xs font-semibold uppercase tracking-widest text-base-content/40 px-2 mb-3 truncate">
+            {@project.name}
+          </p>
+
+          <a
+            href="#project-top"
+            class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-base-200 text-sm text-base-content/70 transition-colors"
+          >
+            <.icon name="ri-file-text-line" class="size-4 shrink-0 text-base-content/40" />
+            Overview
+          </a>
+
+          <div class="pt-2">
+            <p class="text-xs font-semibold uppercase tracking-widest text-base-content/30 px-2 mb-1">
+              Sections
+            </p>
+            <p
+              :if={@project.categories == []}
+              class="px-2 py-1 text-xs text-base-content/30 italic"
+            >
+              No sections yet
+            </p>
+            <a
+              :for={cat <- @project.categories}
+              href={"#section-#{cat.id}"}
+              class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-base-200 text-sm text-base-content/70 transition-colors"
+            >
+              <span class="w-1 h-1 rounded-full bg-base-content/30 shrink-0 ml-1"></span>
+              <span class="truncate">{cat.name}</span>
+            </a>
+          </div>
+
+          <div class="pt-2">
+            <a
+              href="#members"
+              class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-base-200 text-sm text-base-content/70 transition-colors"
+            >
+              <.icon name="ri-team-line" class="size-4 shrink-0 text-base-content/40" />
+              Members
+              <span class="ml-auto text-xs text-base-content/30">
+                {length(@project.project_members)}
+              </span>
+            </a>
+          </div>
+        </div>
+      </:drawer>
+
+      <div id="project-top" class="max-w-3xl mx-auto px-6 md:px-10 py-6 space-y-10">
 
         <%!-- Project header --%>
         <div class="pb-6 border-b border-base-300 space-y-4">
@@ -305,7 +355,7 @@ defmodule QlockWeb.ProjectsLive.Show do
         </div>
 
         <%!-- Sections --%>
-        <div class="space-y-8">
+        <div id="sections" class="space-y-8">
           <div class="flex items-center justify-between">
             <p class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
               Sections
@@ -341,6 +391,7 @@ defmodule QlockWeb.ProjectsLive.Show do
           <%!-- Each section --%>
           <div
             :for={category <- @project.categories}
+            id={"section-#{category.id}"}
             class="border-l-4 border-base-300 pl-5 space-y-3 hover:border-primary transition-colors group"
           >
             <%!-- Section title: click to edit --%>
@@ -416,7 +467,7 @@ defmodule QlockWeb.ProjectsLive.Show do
         </div>
 
         <%!-- Members --%>
-        <div class="space-y-4 border-t border-base-300 pt-8">
+        <div id="members" class="space-y-4 border-t border-base-300 pt-8">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <p class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
