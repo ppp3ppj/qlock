@@ -69,7 +69,7 @@ defmodule QlockWeb.Layouts do
               <.icon name="ri-folder-line" class="size-5" />
             </.link>
           </li>
-          <li class="tooltip tooltip-right w-full" data-tip="Time Tracking">
+          <li class="tooltip tooltip-right w-full" data-tip="Time Entries (read-only)">
             <.link
               navigate={~p"/time"}
               class={[

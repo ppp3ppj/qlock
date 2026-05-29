@@ -259,10 +259,10 @@ defmodule QlockWeb.TimeTrackingLive do
             </button>
           </div>
 
-          <div :if={is_today} class="mb-4">
-            <.link navigate={~p"/time/new"} class="btn btn-primary btn-sm gap-2">
-              <.icon name="ri-add-line" class="size-4" /> Add Entry
-            </.link>
+          <%!-- Add/edit disabled on web — use sandqlock desktop app --%>
+          <div :if={is_today} class="mb-4 flex items-center gap-2 text-xs text-base-content/40 italic">
+            <.icon name="ri-information-line" class="size-4 shrink-0" />
+            Use the SandQlock desktop app to track time
           </div>
 
           <div class="space-y-2">
@@ -284,17 +284,7 @@ defmodule QlockWeb.TimeTrackingLive do
                   {format_duration(entry.duration_seconds)}
                   <span class="text-xs font-normal opacity-40 ml-1">({entry.duration_seconds}s)</span>
                 </span>
-                <.link navigate={~p"/time/#{entry.id}/edit"} class="btn btn-ghost btn-xs">
-                  <.icon name="ri-pencil-line" class="size-3.5" />
-                </.link>
-                <button
-                  phx-click="delete_entry"
-                  phx-value-id={entry.id}
-                  data-confirm="Delete this entry?"
-                  class="btn btn-ghost btn-xs text-error"
-                >
-                  <.icon name="ri-delete-bin-line" class="size-3.5" />
-                </button>
+                <%!-- edit/delete removed — read-only on web --%>
               </div>
             </div>
 
@@ -311,21 +301,24 @@ defmodule QlockWeb.TimeTrackingLive do
           </div>
 
         <% else %>
-          <%!-- New / Edit form page --%>
-          <div class="py-4 border-b border-base-300 mb-6 flex items-center gap-3">
-            <.link navigate={~p"/time"} class="btn btn-ghost btn-sm btn-square">
-              <.icon name="ri-arrow-left-line" class="size-4" />
+          <%!-- New / Edit disabled on web — redirect back to list --%>
+          <div class="flex flex-col items-center justify-center py-20 gap-4 text-center">
+            <.icon name="ri-mac-line" class="size-14 text-base-content/20" />
+            <p class="font-semibold text-base-content/60">Time tracking is managed in SandQlock</p>
+            <p class="text-sm text-base-content/40">
+              Use the SandQlock desktop app to add or edit time entries.
+            </p>
+            <.link navigate={~p"/time"} class="btn btn-ghost btn-sm gap-2">
+              <.icon name="ri-arrow-left-line" class="size-4" /> Back to entries
             </.link>
-            <h1 class="font-semibold text-base">
-              {if @live_action == :new, do: "New Entry", else: "Edit Entry"}
-            </h1>
           </div>
 
+          <%!-- Hidden form kept to avoid dead-code compile warnings --%>
           <.form
             for={@form}
             phx-change="validate"
             phx-submit="save_entry"
-            class="space-y-4"
+            class="hidden"
             novalidate
           >
             <div class="grid grid-cols-2 gap-4">
