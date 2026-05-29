@@ -40,7 +40,10 @@ defmodule Qlock.TimeTracking.TimeEntry do
 
   policies do
     policy action_type(:read) do
+      # Owner can always read their own entries
       authorize_if relates_to_actor_via(:user)
+      # Admins can read all entries (needed for team reports)
+      authorize_if actor_attribute_equals(:role, :admin)
     end
 
     policy action_type(:create) do

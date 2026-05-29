@@ -80,6 +80,17 @@ defmodule QlockWeb.Layouts do
               <.icon name="ri-time-line" class="size-5" />
             </.link>
           </li>
+          <li class="tooltip tooltip-right w-full" data-tip="Reports">
+            <.link
+              navigate={~p"/reports"}
+              class={[
+                "btn btn-ghost btn-square btn-sm w-full",
+                @current_page == :reports && "bg-base-300 text-primary"
+              ]}
+            >
+              <.icon name="ri-bar-chart-line" class="size-5" />
+            </.link>
+          </li>
 
           <%!-- Settings pushed to bottom of nav --%>
           <li class="tooltip tooltip-right w-full mt-auto" data-tip="Settings">
