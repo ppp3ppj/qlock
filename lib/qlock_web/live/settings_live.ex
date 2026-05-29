@@ -12,6 +12,7 @@ defmodule QlockWeb.SettingsLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_page={:settings} current_user={@current_user}>
+      <div class="max-w-2xl mx-auto px-6 md:px-10 py-6">
       <.header>Settings</.header>
 
       <div class="mt-6 max-w-md space-y-4">
@@ -45,6 +46,7 @@ defmodule QlockWeb.SettingsLive do
           if (sel) sel.value = localStorage.getItem('phx:theme') || 'system';
         })();
       </script>
+      </div>
     </Layouts.app>
     """
   end

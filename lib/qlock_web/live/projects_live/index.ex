@@ -51,6 +51,7 @@ defmodule QlockWeb.ProjectsLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_page={:projects} current_user={@current_user}>
+      <div class="max-w-4xl mx-auto px-6 md:px-10 py-6">
       <.header>
         Projects
         <:actions>
@@ -93,6 +94,7 @@ defmodule QlockWeb.ProjectsLive.Index do
           </.button>
         </:action>
       </.table>
+      </div>
     </Layouts.app>
     """
   end

@@ -12,6 +12,17 @@
 //   destroyed() {},
 // }
 
+// Auto-focus an input/textarea when it mounts and select all text.
+// Used for click-to-edit fields so the user can type immediately.
+const AutoFocus = {
+  mounted() {
+    this.el.focus()
+    // Move cursor to end (same as Livebook headline behavior)
+    const len = this.el.value.length
+    this.el.setSelectionRange(len, len)
+  }
+}
+
 export default {
-  // MyHook,
+  AutoFocus,
 }

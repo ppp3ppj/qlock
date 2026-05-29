@@ -31,49 +31,49 @@ defmodule QlockWeb.Layouts do
   attr :current_scope, :map, default: nil
 
   slot :inner_block, required: true
+  slot :drawer
 
   def app(assigns) do
     ~H"""
-    <div class="flex min-h-screen">
-      <%!-- Icon sidebar --%>
-      <aside class="hidden lg:flex flex-col items-center w-14 bg-base-200 border-r border-base-300 py-3 gap-1 shrink-0">
+    <div class="flex h-screen overflow-hidden">
+      <%!-- Narrow icon sidebar --%>
+      <aside class="hidden lg:flex flex-col items-center w-14 bg-base-200 border-r border-base-300 py-3 shrink-0">
         <%!-- Logo --%>
-        <a href={~p"/"} class="mb-3">
+        <a href={~p"/"} class="mb-3 flex items-center justify-center">
           <img src={~p"/images/logo.svg"} width="28" />
         </a>
 
-        <div class="divider my-0" />
+        <div class="divider my-0 w-8" />
 
         <%!-- Nav icons --%>
-        <ul class="flex flex-col items-center gap-1 flex-1 mt-1">
-          <li class="tooltip tooltip-right" data-tip="Home">
+        <ul class="flex flex-col items-center gap-0.5 flex-1 mt-2 w-full px-1.5">
+          <li class="tooltip tooltip-right w-full" data-tip="Home">
             <.link
               navigate={~p"/"}
               class={[
-                "btn btn-ghost btn-square btn-sm",
+                "btn btn-ghost btn-square btn-sm w-full",
                 @current_page == :home && "bg-base-300 text-primary"
               ]}
             >
               <.icon name="ri-home-line" class="size-5" />
             </.link>
           </li>
-          <li class="tooltip tooltip-right" data-tip="Projects">
+          <li class="tooltip tooltip-right w-full" data-tip="Projects">
             <.link
               navigate={~p"/projects"}
               class={[
-                "btn btn-ghost btn-square btn-sm",
+                "btn btn-ghost btn-square btn-sm w-full",
                 @current_page == :projects && "bg-base-300 text-primary"
               ]}
             >
               <.icon name="ri-folder-line" class="size-5" />
             </.link>
           </li>
-
-          <li class="tooltip tooltip-right" data-tip="Time Tracking">
+          <li class="tooltip tooltip-right w-full" data-tip="Time Tracking">
             <.link
               navigate={~p"/time"}
               class={[
-                "btn btn-ghost btn-square btn-sm",
+                "btn btn-ghost btn-square btn-sm w-full",
                 @current_page == :time && "bg-base-300 text-primary"
               ]}
             >
@@ -82,11 +82,11 @@ defmodule QlockWeb.Layouts do
           </li>
 
           <%!-- Settings pushed to bottom of nav --%>
-          <li class="tooltip tooltip-right mt-auto" data-tip="Settings">
+          <li class="tooltip tooltip-right w-full mt-auto" data-tip="Settings">
             <.link
               navigate={~p"/settings"}
               class={[
-                "btn btn-ghost btn-square btn-sm",
+                "btn btn-ghost btn-square btn-sm w-full",
                 @current_page == :settings && "bg-base-300 text-primary"
               ]}
             >
@@ -95,30 +95,48 @@ defmodule QlockWeb.Layouts do
           </li>
         </ul>
 
-        <%!-- User menu --%>
-        <div class="flex flex-col items-center gap-2 mb-2" :if={@current_user}>
-          <div class="divider my-0" />
-          <.user_menu user={@current_user} />
+        <%!-- User avatar --%>
+        <div class="flex flex-col items-center mt-2 w-full px-1.5" :if={@current_user}>
+          <div class="divider my-0 w-8" />
+          <div class="mt-2">
+            <.user_menu user={@current_user} />
+          </div>
         </div>
       </aside>
 
-      <%!-- Mobile topbar --%>
-      <div class="flex flex-col flex-1 min-w-0">
-        <div class="navbar bg-base-100 border-b border-base-300 lg:hidden sticky top-0 z-30">
-          <div class="flex gap-2">
+      <%!-- Content column --%>
+      <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <%!-- Mobile topbar --%>
+        <div class="navbar bg-base-100 border-b border-base-300 lg:hidden sticky top-0 z-30 min-h-12 px-4">
+          <div class="flex gap-1">
             <.link navigate={~p"/"} class="btn btn-ghost btn-square btn-sm">
               <.icon name="ri-home-line" class="size-5" />
             </.link>
             <.link navigate={~p"/projects"} class="btn btn-ghost btn-square btn-sm">
               <.icon name="ri-folder-line" class="size-5" />
             </.link>
+            <.link navigate={~p"/time"} class="btn btn-ghost btn-square btn-sm">
+              <.icon name="ri-time-line" class="size-5" />
+            </.link>
           </div>
-          <span class="font-bold ml-2">Qlock</span>
+          <span class="font-semibold ml-2 text-sm">Qlock</span>
         </div>
 
-        <main class="flex-1 p-6 max-w-5xl w-full">
-          {render_slot(@inner_block)}
-        </main>
+        <%!-- Drawer + main content --%>
+        <div class="flex flex-1 overflow-hidden">
+          <%!-- Secondary drawer (optional, page-specific) --%>
+          <div
+            :if={@drawer != []}
+            class="hidden lg:flex flex-col w-52 xl:w-60 border-r border-base-300 bg-base-100 overflow-y-auto shrink-0"
+          >
+            {render_slot(@drawer)}
+          </div>
+
+          <%!-- Scrollable main content — pages center themselves --%>
+          <main class="flex-1 overflow-y-auto scroll-smooth">
+            {render_slot(@inner_block)}
+          </main>
+        </div>
       </div>
     </div>
 

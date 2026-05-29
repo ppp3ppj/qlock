@@ -26,11 +26,11 @@ defmodule Qlock.Projects.Category do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:name, :project_id]
+      accept [:name, :description, :project_id]
     end
 
     update :update do
-      accept [:name]
+      accept [:name, :description]
     end
   end
 
@@ -49,6 +49,11 @@ defmodule Qlock.Projects.Category do
 
     attribute :name, :string do
       allow_nil? false
+      public? true
+    end
+
+    attribute :description, :string do
+      allow_nil? true
       public? true
     end
 
