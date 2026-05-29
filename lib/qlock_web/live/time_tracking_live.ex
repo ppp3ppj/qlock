@@ -100,10 +100,7 @@ defmodule QlockWeb.TimeTrackingLive do
           <%!-- Date nav --%>
           <% is_today = @selected_date == Date.utc_today() %>
           <div class="flex items-center gap-2">
-            <button
-              phx-click="prev_day"
-              class="btn btn-ghost btn-sm btn-square"
-            >
+            <button phx-click="prev_day" class="btn btn-ghost btn-sm btn-square">
               <.icon name="ri-arrow-left-s-line" class="size-5" />
             </button>
 
@@ -118,13 +115,13 @@ defmodule QlockWeb.TimeTrackingLive do
             >
               <.icon name="ri-arrow-right-s-line" class="size-5" />
             </button>
+          </div>
 
-            <button
-              phx-click="today"
-              class={["btn btn-ghost btn-xs gap-1", is_today && "invisible"]}
-            >
-              <.icon name="ri-calendar-line" class="size-3.5" />
-              Today
+          <%!-- Back to today — only shows when browsing past days --%>
+          <div :if={!is_today} class="flex justify-center pt-1">
+            <button phx-click="today" class="btn btn-ghost btn-sm gap-1.5 text-primary">
+              <.icon name="ri-corner-up-right-line" class="size-4" />
+              Back to today
             </button>
           </div>
         </div>
