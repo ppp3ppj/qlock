@@ -41,8 +41,6 @@ defmodule QlockWeb.Router do
       live "/settings", SettingsLive, :index
       live "/reports", ReportsLive, :index
       live "/time", TimeTrackingLive, :index
-      live "/time/new", TimeTrackingLive, :new
-      live "/time/:id/edit", TimeTrackingLive, :edit
     end
   end
 
