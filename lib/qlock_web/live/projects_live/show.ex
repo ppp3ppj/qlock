@@ -27,6 +27,7 @@ defmodule QlockWeb.ProjectsLive.Show do
 
   # --- Project name (click → input, blur → save, Escape → cancel) ---
 
+  @impl true
   def handle_event("edit_project_name", _, socket),
     do: {:noreply, assign(socket, editing_project_name: true)}
 

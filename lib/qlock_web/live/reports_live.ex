@@ -53,6 +53,7 @@ defmodule QlockWeb.ReportsLive do
   # ── Events ────────────────────────────────────────────────────────────────
 
   # Quick range buttons
+  @impl true
   def handle_event("set_range", %{"range" => range}, socket) do
     today = Date.utc_today()
 
