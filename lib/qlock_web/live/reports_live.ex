@@ -43,7 +43,11 @@ defmodule QlockWeb.ReportsLive do
         project_groups: [],
         member_groups: [],
         daily_groups: [],
-        loading: false
+        loading: false,
+        # Nudge form state
+        nudge_for: nil,        # {user_id, email, default_message}
+        nudge_message: "",
+        nudge_mode: "notify"   # "notify" | "popup"
       )
       |> load_report()
 
@@ -84,27 +88,49 @@ defmodule QlockWeb.ReportsLive do
   end
 
   # ── Nudge ─────────────────────────────────────────────────────────────────────
-  # Admin clicks Nudge next to a member who is behind their goal.
-  # Broadcasts via Phoenix PubSub → NotificationTransport → tauri-plugin-websocket
-  # → OS popup on the user's desktop. No database involved.
-  def handle_event("nudge", %{"user-id" => user_id, "actual" => actual_s, "goal" => goal_s}, socket) do
+
+  # Step 1: Admin clicks "Nudge" → open the compose form
+  def handle_event("open_nudge", %{"user-id" => user_id, "actual" => actual_s, "goal" => goal_s, "email" => email}, socket) do
     if socket.assigns.is_admin do
       actual_h = String.to_integer(actual_s) |> div(3600)
       goal_h   = String.to_integer(goal_s)   |> div(3600)
 
-      message =
+      default_msg =
         "You've logged #{actual_h}h this week but your goal is #{goal_h}h. " <>
         "Please add your missing time entries in SandQlock."
+
+      {:noreply,
+       assign(socket,
+         nudge_for: {user_id, email, default_msg},
+         nudge_message: default_msg,
+         nudge_mode: "notify"
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_nudge", _, socket),
+    do: {:noreply, assign(socket, nudge_for: nil, nudge_message: "", nudge_mode: "notify")}
+
+  # Step 2: Admin edits message / mode then clicks Send
+  def handle_event("send_nudge", %{"message" => message, "mode" => mode}, socket) do
+    with true <- socket.assigns.is_admin,
+         {user_id, email, _} <- socket.assigns.nudge_for,
+         msg when msg != "" <- String.trim(message) do
 
       Phoenix.PubSub.broadcast(
         Qlock.PubSub,
         "notifications:#{user_id}",
-        {:nudge, message}
+        {:nudge, %{message: msg, mode: mode}}
       )
 
-      {:noreply, put_flash(socket, :info, "Nudge sent ✓")}
+      {:noreply,
+       socket
+       |> assign(nudge_for: nil, nudge_message: "", nudge_mode: "notify")
+       |> put_flash(:info, "Nudge sent to #{email} ✓")}
     else
-      {:noreply, socket}
+      _ -> {:noreply, assign(socket, nudge_for: nil)}
     end
   end
 
@@ -519,11 +545,12 @@ defmodule QlockWeb.ReportsLive do
             <%!-- Broadcasts via PubSub → NotificationTransport → tauri-plugin-websocket → OS popup --%>
             <button
               :if={member && member_total < goal_secs_for_range(member, @date_from, @date_to)}
-              phx-click="nudge"
+              phx-click="open_nudge"
               phx-value-user-id={member && member.id}
               phx-value-actual={member_total}
               phx-value-goal={goal_secs_for_range(member, @date_from, @date_to)}
-              title="Send a real-time reminder to this user's desktop"
+              phx-value-email={user_label(member)}
+              title="Send a reminder to this user's desktop"
               class="btn btn-ghost btn-xs gap-1 text-warning shrink-0"
             >
               <.icon name="ri-notification-2-line" class="size-3.5" />
@@ -568,6 +595,82 @@ defmodule QlockWeb.ReportsLive do
         </div>
 
       </div>
+
+      <%!-- ── Nudge compose modal ──────────────────────────────────────── --%>
+      <div :if={@nudge_for} class="modal modal-open modal-middle">
+        <div class="modal-box max-w-md space-y-5">
+
+          <%!-- Header --%>
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-lg">Send Nudge</h3>
+            <button phx-click="close_nudge" class="btn btn-ghost btn-sm btn-square">
+              <.icon name="ri-close-line" class="size-5" />
+            </button>
+          </div>
+
+          <p class="text-sm text-base-content/60">
+            To: <span class="font-semibold text-base-content">{elem(@nudge_for, 1)}</span>
+          </p>
+
+          <form phx-submit="send_nudge" class="space-y-4">
+            <%!-- Custom message --%>
+            <div>
+              <label class="label pb-1">
+                <span class="label-text text-xs font-semibold uppercase tracking-widest">
+                  Message
+                </span>
+              </label>
+              <textarea
+                name="message"
+                rows="4"
+                class="textarea textarea-bordered w-full font-mono text-sm"
+                placeholder="Write your message..."
+              >{elem(@nudge_for, 2)}</textarea>
+            </div>
+
+            <%!-- Display mode --%>
+            <div>
+              <label class="label pb-1">
+                <span class="label-text text-xs font-semibold uppercase tracking-widest">
+                  Display mode
+                </span>
+              </label>
+              <div class="flex flex-col gap-2">
+                <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-base-200">
+                  <input type="radio" name="mode" value="notify" class="radio radio-sm radio-primary" checked />
+                  <div>
+                    <p class="text-sm font-medium">OS Notification</p>
+                    <p class="text-xs text-base-content/50">Appears in the system tray notification area</p>
+                  </div>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-base-200">
+                  <input type="radio" name="mode" value="popup" class="radio radio-sm radio-primary" />
+                  <div>
+                    <p class="text-sm font-medium">In-app Popup</p>
+                    <p class="text-xs text-base-content/50">Full-screen overlay inside SandQlock</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <%!-- Actions --%>
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" phx-click="close_nudge" class="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm gap-2">
+                <.icon name="ri-send-plane-line" class="size-4" />
+                Send Nudge
+              </button>
+            </div>
+          </form>
+
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button phx-click="close_nudge">close</button>
+        </form>
+      </div>
+
     </Layouts.app>
     """
   end

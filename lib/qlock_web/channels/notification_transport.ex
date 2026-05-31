@@ -51,8 +51,14 @@ defmodule QlockWeb.NotificationTransport do
   def handle_in(_msg, state), do: {:ok, state}
 
   # Admin nudged this user — push JSON to the WebSocket client
-  def handle_info({:nudge, message}, state) do
-    payload = Jason.encode!(%{type: "nudge", message: message})
+  # payload is either a plain string (legacy) or %{message: str, mode: str}
+  def handle_info({:nudge, %{message: message, mode: mode}}, state) do
+    payload = Jason.encode!(%{type: "nudge", message: message, mode: mode})
+    {:push, {:text, payload}, state}
+  end
+
+  def handle_info({:nudge, message}, state) when is_binary(message) do
+    payload = Jason.encode!(%{type: "nudge", message: message, mode: "notify"})
     {:push, {:text, payload}, state}
   end
 
