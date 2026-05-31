@@ -650,6 +650,15 @@ defmodule QlockWeb.ReportsLive do
                     <p class="text-xs text-base-content/50">Full-screen overlay inside SandQlock</p>
                   </div>
                 </label>
+                <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-base-200">
+                  <input type="radio" name="mode" value="ghost" class="radio radio-sm radio-warning" />
+                  <div>
+                    <p class="text-sm font-medium">👻 Ghost Window</p>
+                    <p class="text-xs text-base-content/50">
+                      Always-on-top floating window above ALL apps — can't be minimized or ignored
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
 
