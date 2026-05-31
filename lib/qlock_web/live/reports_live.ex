@@ -83,6 +83,31 @@ defmodule QlockWeb.ReportsLive do
      |> load_report()}
   end
 
+  # ── Nudge ─────────────────────────────────────────────────────────────────────
+  # Admin clicks Nudge next to a member who is behind their goal.
+  # Broadcasts via Phoenix PubSub → NotificationTransport → tauri-plugin-websocket
+  # → OS popup on the user's desktop. No database involved.
+  def handle_event("nudge", %{"user-id" => user_id, "actual" => actual_s, "goal" => goal_s}, socket) do
+    if socket.assigns.is_admin do
+      actual_h = String.to_integer(actual_s) |> div(3600)
+      goal_h   = String.to_integer(goal_s)   |> div(3600)
+
+      message =
+        "You've logged #{actual_h}h this week but your goal is #{goal_h}h. " <>
+        "Please add your missing time entries in SandQlock."
+
+      Phoenix.PubSub.broadcast(
+        Qlock.PubSub,
+        "notifications:#{user_id}",
+        {:nudge, message}
+      )
+
+      {:noreply, put_flash(socket, :info, "Nudge sent ✓")}
+    else
+      {:noreply, socket}
+    end
+  end
+
   # Custom date range + user filter
   def handle_event("apply_filter", params, socket) do
     date_from =
@@ -190,14 +215,14 @@ defmodule QlockWeb.ReportsLive do
 
   # Goal in seconds for the selected date range.
   # weekly_hours_goal (nil → 35h default) scaled by weeks in range.
-  defp goal_seconds_for_range(user, date_from, date_to) do
+  def goal_secs_for_range(user, date_from, date_to) do
     weekly_h = user.weekly_hours_goal || 35.0
     days = Date.diff(date_to, date_from) + 1
     weeks = max(1, days / 7)
     round(weekly_h * 3600 * weeks)
   end
 
-  defp goal_class(actual, goal) when goal > 0 do
+  def goal_class(actual, goal) when goal > 0 do
     pct = actual / goal * 100
     cond do
       pct >= 100 -> "text-success"
@@ -205,9 +230,9 @@ defmodule QlockWeb.ReportsLive do
       true       -> "text-error"
     end
   end
-  defp goal_class(_, _), do: "text-base-content"
+  def goal_class(_, _), do: "text-base-content"
 
-  defp goal_progress_class(actual, goal) when goal > 0 do
+  def goal_progress_class(actual, goal) when goal > 0 do
     pct = actual / goal * 100
     cond do
       pct >= 100 -> "progress-success"
@@ -215,7 +240,7 @@ defmodule QlockWeb.ReportsLive do
       true       -> "progress-error"
     end
   end
-  defp goal_progress_class(_, _), do: "progress-secondary"
+  def goal_progress_class(_, _), do: "progress-secondary"
 
   # [{date, total_seconds}] — every day in range (0 if no entries)
   defp build_daily_groups(entries, date_from, date_to) do
@@ -458,7 +483,7 @@ defmodule QlockWeb.ReportsLive do
 
                 <div class="flex items-center gap-2 shrink-0">
                   <%!-- Actual / Goal --%>
-                  <% goal_secs = if member, do: goal_seconds_for_range(member, @date_from, @date_to), else: 0 %>
+                  <% goal_secs = if member, do: goal_secs_for_range(member, @date_from, @date_to), else: 0 %>
                   <span class={"font-mono font-semibold text-sm tabular-nums #{goal_class(member_total, goal_secs)}"}>
                     {format_hours(member_total)}
                   </span>
@@ -489,6 +514,21 @@ defmodule QlockWeb.ReportsLive do
                 Part-time · {trunc(member.weekly_hours_goal || 35.0)}h/week goal
               </p>
             </div>
+
+            <%!-- Nudge button — shown when member is behind goal --%>
+            <%!-- Broadcasts via PubSub → NotificationTransport → tauri-plugin-websocket → OS popup --%>
+            <button
+              :if={member && member_total < goal_secs_for_range(member, @date_from, @date_to)}
+              phx-click="nudge"
+              phx-value-user-id={member && member.id}
+              phx-value-actual={member_total}
+              phx-value-goal={goal_secs_for_range(member, @date_from, @date_to)}
+              title="Send a real-time reminder to this user's desktop"
+              class="btn btn-ghost btn-xs gap-1 text-warning shrink-0"
+            >
+              <.icon name="ri-notification-2-line" class="size-3.5" />
+              Nudge
+            </button>
           </div>
         </div>
 
