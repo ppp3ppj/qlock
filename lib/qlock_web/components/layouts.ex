@@ -92,6 +92,23 @@ defmodule QlockWeb.Layouts do
             </.link>
           </li>
 
+          <%!-- Admin: Team management — only visible to admins --%>
+          <li
+            :if={@current_user && @current_user.role == :admin}
+            class="tooltip tooltip-right w-full"
+            data-tip="Team"
+          >
+            <.link
+              navigate={~p"/admin/users"}
+              class={[
+                "btn btn-ghost btn-square btn-sm w-full",
+                @current_page == :admin && "bg-base-300 text-primary"
+              ]}
+            >
+              <.icon name="ri-team-line" class="size-5" />
+            </.link>
+          </li>
+
           <%!-- Settings pushed to bottom of nav --%>
           <li class="tooltip tooltip-right w-full mt-auto" data-tip="Settings">
             <.link

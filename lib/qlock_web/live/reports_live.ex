@@ -176,7 +176,7 @@ defmodule QlockWeb.ReportsLive do
     |> Enum.sort_by(&elem(&1, 1), :desc)
   end
 
-  # [{user, total_seconds}] — admin only
+  # [{user, total_seconds}] — admin only, includes weekly_hours_goal from user
   defp build_member_groups(entries) do
     entries
     |> Enum.group_by(& &1.user_id)
@@ -187,6 +187,35 @@ defmodule QlockWeb.ReportsLive do
     end)
     |> Enum.sort_by(&elem(&1, 1), :desc)
   end
+
+  # Goal in seconds for the selected date range.
+  # weekly_hours_goal (nil → 35h default) scaled by weeks in range.
+  defp goal_seconds_for_range(user, date_from, date_to) do
+    weekly_h = user.weekly_hours_goal || 35.0
+    days = Date.diff(date_to, date_from) + 1
+    weeks = max(1, days / 7)
+    round(weekly_h * 3600 * weeks)
+  end
+
+  defp goal_class(actual, goal) when goal > 0 do
+    pct = actual / goal * 100
+    cond do
+      pct >= 100 -> "text-success"
+      pct >= 70  -> "text-warning"
+      true       -> "text-error"
+    end
+  end
+  defp goal_class(_, _), do: "text-base-content"
+
+  defp goal_progress_class(actual, goal) when goal > 0 do
+    pct = actual / goal * 100
+    cond do
+      pct >= 100 -> "progress-success"
+      pct >= 70  -> "progress-warning"
+      true       -> "progress-error"
+    end
+  end
+  defp goal_progress_class(_, _), do: "progress-secondary"
 
   # [{date, total_seconds}] — every day in range (0 if no entries)
   defp build_daily_groups(entries, date_from, date_to) do
@@ -416,28 +445,49 @@ defmodule QlockWeb.ReportsLive do
           <div :for={{member, member_total} <- @member_groups}
                class="flex items-center gap-3">
             <%!-- Avatar --%>
-            <div class="w-7 h-7 rounded-full bg-primary text-primary-content flex items-center justify-center shrink-0">
+            <div class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center shrink-0">
               <span class="text-xs font-bold leading-none">
                 {user_label(member) |> String.first() |> String.upcase()}
               </span>
             </div>
+
             <div class="flex-1 min-w-0">
+              <%!-- Email + goal status --%>
               <div class="flex items-center justify-between gap-2 mb-1">
                 <span class="text-sm truncate">{user_label(member)}</span>
+
                 <div class="flex items-center gap-2 shrink-0">
-                  <span class="text-xs text-base-content/40">
-                    {pct(@total_seconds, member_total)}%
-                  </span>
-                  <span class="font-mono font-semibold text-sm tabular-nums">
+                  <%!-- Actual / Goal --%>
+                  <% goal_secs = if member, do: goal_seconds_for_range(member, @date_from, @date_to), else: 0 %>
+                  <span class={"font-mono font-semibold text-sm tabular-nums #{goal_class(member_total, goal_secs)}"}>
                     {format_hours(member_total)}
                   </span>
+                  <span class="text-xs text-base-content/30">/</span>
+                  <span class="font-mono text-sm tabular-nums text-base-content/40">
+                    {format_hours(goal_secs)}
+                  </span>
+                  <%!-- Status icon --%>
+                  <span :if={member_total >= goal_secs && goal_secs > 0}
+                        class="text-success text-xs">✓</span>
+                  <span :if={member_total < goal_secs && member_total / max(goal_secs, 1) >= 0.7}
+                        class="text-warning text-xs">!</span>
+                  <span :if={member_total / max(goal_secs, 1) < 0.7 && goal_secs > 0}
+                        class="text-error text-xs">✗</span>
                 </div>
               </div>
+
+              <%!-- Progress bar vs goal (not vs total — vs their own target) --%>
               <progress
-                class="progress progress-secondary h-1.5 w-full"
-                value={member_total}
-                max={@total_seconds}
+                class={"progress h-1.5 w-full #{goal_progress_class(member_total, goal_secs)}"}
+                value={min(member_total, goal_secs)}
+                max={max(goal_secs, 1)}
               />
+
+              <%!-- Part-time label --%>
+              <p :if={member && (member.weekly_hours_goal || 35.0) < 35.0}
+                 class="text-xs text-base-content/30 mt-0.5">
+                Part-time · {trunc(member.weekly_hours_goal || 35.0)}h/week goal
+              </p>
             </div>
           </div>
         </div>

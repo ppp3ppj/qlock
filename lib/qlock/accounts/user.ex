@@ -74,6 +74,12 @@ defmodule Qlock.Accounts.User do
       change set_attribute(:role, :admin)
     end
 
+    # Admin sets each user's weekly hour target (full-time vs part-time)
+    update :set_weekly_goal do
+      require_atomic? false
+      accept [:weekly_hours_goal]
+    end
+
     read :get_by_subject do
       description "Get a user by the subject claim in a JWT"
       argument :subject, :string, allow_nil?: false
@@ -289,6 +295,10 @@ defmodule Qlock.Accounts.User do
     policy action(:promote_to_admin) do
       authorize_if actor_attribute_equals(:role, :admin)
     end
+
+    policy action(:set_weekly_goal) do
+      authorize_if actor_attribute_equals(:role, :admin)
+    end
   end
 
   attributes do
@@ -312,6 +322,12 @@ defmodule Qlock.Accounts.User do
     end
 
     attribute :confirmed_at, :utc_datetime_usec
+
+    # Weekly hour target set by admin — nil uses 35h default (7h × 5 days)
+    attribute :weekly_hours_goal, :float do
+      allow_nil? true
+      public? false
+    end
   end
 
   identities do
