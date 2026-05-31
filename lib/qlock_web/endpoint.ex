@@ -11,6 +11,12 @@ defmodule QlockWeb.Endpoint do
     same_site: "Lax"
   ]
 
+  # Raw WebSocket for sandqlock desktop notifications (tauri-plugin-websocket)
+  # Connect: ws://localhost:4000/ws/notifications?token=<jwt>
+  socket "/ws/notifications", QlockWeb.NotificationTransport,
+    websocket: true,
+    longpoll: false
+
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]

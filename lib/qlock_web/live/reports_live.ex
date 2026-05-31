@@ -43,7 +43,11 @@ defmodule QlockWeb.ReportsLive do
         project_groups: [],
         member_groups: [],
         daily_groups: [],
-        loading: false
+        loading: false,
+        # Nudge form state
+        nudge_for: nil,        # {user_id, email, default_message}
+        nudge_message: "",
+        nudge_mode: "notify"   # "notify" | "popup"
       )
       |> load_report()
 
@@ -81,6 +85,53 @@ defmodule QlockWeb.ReportsLive do
      socket
      |> assign(date_from: date_from, date_to: date_to)
      |> load_report()}
+  end
+
+  # ── Nudge ─────────────────────────────────────────────────────────────────────
+
+  # Step 1: Admin clicks "Nudge" → open the compose form
+  def handle_event("open_nudge", %{"user-id" => user_id, "actual" => actual_s, "goal" => goal_s, "email" => email}, socket) do
+    if socket.assigns.is_admin do
+      actual_h = String.to_integer(actual_s) |> div(3600)
+      goal_h   = String.to_integer(goal_s)   |> div(3600)
+
+      default_msg =
+        "You've logged #{actual_h}h this week but your goal is #{goal_h}h. " <>
+        "Please add your missing time entries in SandQlock."
+
+      {:noreply,
+       assign(socket,
+         nudge_for: {user_id, email, default_msg},
+         nudge_message: default_msg,
+         nudge_mode: "notify"
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_nudge", _, socket),
+    do: {:noreply, assign(socket, nudge_for: nil, nudge_message: "", nudge_mode: "notify")}
+
+  # Step 2: Admin edits message / mode then clicks Send
+  def handle_event("send_nudge", %{"message" => message, "mode" => mode}, socket) do
+    with true <- socket.assigns.is_admin,
+         {user_id, email, _} <- socket.assigns.nudge_for,
+         msg when msg != "" <- String.trim(message) do
+
+      Phoenix.PubSub.broadcast(
+        Qlock.PubSub,
+        "notifications:#{user_id}",
+        {:nudge, %{message: msg, mode: mode}}
+      )
+
+      {:noreply,
+       socket
+       |> assign(nudge_for: nil, nudge_message: "", nudge_mode: "notify")
+       |> put_flash(:info, "Nudge sent to #{email} ✓")}
+    else
+      _ -> {:noreply, assign(socket, nudge_for: nil)}
+    end
   end
 
   # Custom date range + user filter
@@ -190,14 +241,14 @@ defmodule QlockWeb.ReportsLive do
 
   # Goal in seconds for the selected date range.
   # weekly_hours_goal (nil → 35h default) scaled by weeks in range.
-  defp goal_seconds_for_range(user, date_from, date_to) do
+  def goal_secs_for_range(user, date_from, date_to) do
     weekly_h = user.weekly_hours_goal || 35.0
     days = Date.diff(date_to, date_from) + 1
     weeks = max(1, days / 7)
     round(weekly_h * 3600 * weeks)
   end
 
-  defp goal_class(actual, goal) when goal > 0 do
+  def goal_class(actual, goal) when goal > 0 do
     pct = actual / goal * 100
     cond do
       pct >= 100 -> "text-success"
@@ -205,9 +256,9 @@ defmodule QlockWeb.ReportsLive do
       true       -> "text-error"
     end
   end
-  defp goal_class(_, _), do: "text-base-content"
+  def goal_class(_, _), do: "text-base-content"
 
-  defp goal_progress_class(actual, goal) when goal > 0 do
+  def goal_progress_class(actual, goal) when goal > 0 do
     pct = actual / goal * 100
     cond do
       pct >= 100 -> "progress-success"
@@ -215,7 +266,7 @@ defmodule QlockWeb.ReportsLive do
       true       -> "progress-error"
     end
   end
-  defp goal_progress_class(_, _), do: "progress-secondary"
+  def goal_progress_class(_, _), do: "progress-secondary"
 
   # [{date, total_seconds}] — every day in range (0 if no entries)
   defp build_daily_groups(entries, date_from, date_to) do
@@ -458,7 +509,7 @@ defmodule QlockWeb.ReportsLive do
 
                 <div class="flex items-center gap-2 shrink-0">
                   <%!-- Actual / Goal --%>
-                  <% goal_secs = if member, do: goal_seconds_for_range(member, @date_from, @date_to), else: 0 %>
+                  <% goal_secs = if member, do: goal_secs_for_range(member, @date_from, @date_to), else: 0 %>
                   <span class={"font-mono font-semibold text-sm tabular-nums #{goal_class(member_total, goal_secs)}"}>
                     {format_hours(member_total)}
                   </span>
@@ -489,6 +540,22 @@ defmodule QlockWeb.ReportsLive do
                 Part-time · {trunc(member.weekly_hours_goal || 35.0)}h/week goal
               </p>
             </div>
+
+            <%!-- Nudge button — shown when member is behind goal --%>
+            <%!-- Broadcasts via PubSub → NotificationTransport → tauri-plugin-websocket → OS popup --%>
+            <button
+              :if={member && member_total < goal_secs_for_range(member, @date_from, @date_to)}
+              phx-click="open_nudge"
+              phx-value-user-id={member && member.id}
+              phx-value-actual={member_total}
+              phx-value-goal={goal_secs_for_range(member, @date_from, @date_to)}
+              phx-value-email={user_label(member)}
+              title="Send a reminder to this user's desktop"
+              class="btn btn-ghost btn-xs gap-1 text-warning shrink-0"
+            >
+              <.icon name="ri-notification-2-line" class="size-3.5" />
+              Nudge
+            </button>
           </div>
         </div>
 
@@ -528,6 +595,91 @@ defmodule QlockWeb.ReportsLive do
         </div>
 
       </div>
+
+      <%!-- ── Nudge compose modal ──────────────────────────────────────── --%>
+      <div :if={@nudge_for} class="modal modal-open modal-middle">
+        <div class="modal-box max-w-md space-y-5">
+
+          <%!-- Header --%>
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-lg">Send Nudge</h3>
+            <button phx-click="close_nudge" class="btn btn-ghost btn-sm btn-square">
+              <.icon name="ri-close-line" class="size-5" />
+            </button>
+          </div>
+
+          <p class="text-sm text-base-content/60">
+            To: <span class="font-semibold text-base-content">{elem(@nudge_for, 1)}</span>
+          </p>
+
+          <form phx-submit="send_nudge" class="space-y-4">
+            <%!-- Custom message --%>
+            <div>
+              <label class="label pb-1">
+                <span class="label-text text-xs font-semibold uppercase tracking-widest">
+                  Message
+                </span>
+              </label>
+              <textarea
+                name="message"
+                rows="4"
+                class="textarea textarea-bordered w-full font-mono text-sm"
+                placeholder="Write your message..."
+              >{elem(@nudge_for, 2)}</textarea>
+            </div>
+
+            <%!-- Display mode --%>
+            <div>
+              <label class="label pb-1">
+                <span class="label-text text-xs font-semibold uppercase tracking-widest">
+                  Display mode
+                </span>
+              </label>
+              <div class="flex flex-col gap-2">
+                <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-base-200">
+                  <input type="radio" name="mode" value="notify" class="radio radio-sm radio-primary" checked />
+                  <div>
+                    <p class="text-sm font-medium">OS Notification</p>
+                    <p class="text-xs text-base-content/50">Appears in the system tray notification area</p>
+                  </div>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-base-200">
+                  <input type="radio" name="mode" value="popup" class="radio radio-sm radio-primary" />
+                  <div>
+                    <p class="text-sm font-medium">In-app Popup</p>
+                    <p class="text-xs text-base-content/50">Full-screen overlay inside SandQlock</p>
+                  </div>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-base-200">
+                  <input type="radio" name="mode" value="ghost" class="radio radio-sm radio-warning" />
+                  <div>
+                    <p class="text-sm font-medium">👻 Ghost Window</p>
+                    <p class="text-xs text-base-content/50">
+                      Always-on-top floating window above ALL apps — can't be minimized or ignored
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <%!-- Actions --%>
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" phx-click="close_nudge" class="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm gap-2">
+                <.icon name="ri-send-plane-line" class="size-4" />
+                Send Nudge
+              </button>
+            </div>
+          </form>
+
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button phx-click="close_nudge">close</button>
+        </form>
+      </div>
+
     </Layouts.app>
     """
   end
