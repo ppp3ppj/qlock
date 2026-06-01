@@ -128,7 +128,7 @@ defmodule QlockWeb.ReportsLive do
       {:noreply,
        socket
        |> assign(nudge_for: nil, nudge_message: "", nudge_mode: "notify")
-       |> put_flash(:info, "Nudge sent to #{email} ✓")}
+       |> put_flash(:info, "Nudge sent to #{email}")}
     else
       _ -> {:noreply, assign(socket, nudge_for: nil)}
     end
@@ -517,13 +517,13 @@ defmodule QlockWeb.ReportsLive do
                   <span class="font-mono text-sm tabular-nums text-base-content/40">
                     {format_hours(goal_secs)}
                   </span>
-                  <%!-- Status icon --%>
-                  <span :if={member_total >= goal_secs && goal_secs > 0}
-                        class="text-success text-xs">✓</span>
-                  <span :if={member_total < goal_secs && member_total / max(goal_secs, 1) >= 0.7}
-                        class="text-warning text-xs">!</span>
-                  <span :if={member_total / max(goal_secs, 1) < 0.7 && goal_secs > 0}
-                        class="text-error text-xs">✗</span>
+                  <%!-- Status icon (RemixIcon, no emoji) --%>
+                  <.icon :if={member_total >= goal_secs && goal_secs > 0}
+                         name="ri-checkbox-circle-line" class="size-3.5 text-success shrink-0" />
+                  <.icon :if={member_total < goal_secs && member_total / max(goal_secs, 1) >= 0.7}
+                         name="ri-error-warning-line" class="size-3.5 text-warning shrink-0" />
+                  <.icon :if={member_total / max(goal_secs, 1) < 0.7 && goal_secs > 0}
+                         name="ri-close-circle-line" class="size-3.5 text-error shrink-0" />
                 </div>
               </div>
 
@@ -635,16 +635,18 @@ defmodule QlockWeb.ReportsLive do
                   Display mode
                 </span>
               </label>
-              <div class="flex flex-col gap-2">
+              <div class="flex flex-col gap-1">
                 <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-base-200">
                   <input type="radio" name="mode" value="notify" class="radio radio-sm radio-primary" checked />
+                  <.icon name="ri-notification-3-line" class="size-4 text-primary shrink-0" />
                   <div>
                     <p class="text-sm font-medium">OS Notification</p>
-                    <p class="text-xs text-base-content/50">Appears in the system tray notification area</p>
+                    <p class="text-xs text-base-content/50">System tray notification area</p>
                   </div>
                 </label>
                 <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-base-200">
                   <input type="radio" name="mode" value="popup" class="radio radio-sm radio-primary" />
+                  <.icon name="ri-layout-top-line" class="size-4 text-primary shrink-0" />
                   <div>
                     <p class="text-sm font-medium">In-app Popup</p>
                     <p class="text-xs text-base-content/50">Full-screen overlay inside SandQlock</p>
@@ -652,11 +654,10 @@ defmodule QlockWeb.ReportsLive do
                 </label>
                 <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-base-200">
                   <input type="radio" name="mode" value="ghost" class="radio radio-sm radio-warning" />
+                  <.icon name="ri-picture-in-picture-line" class="size-4 text-warning shrink-0" />
                   <div>
-                    <p class="text-sm font-medium">👻 Ghost Window</p>
-                    <p class="text-xs text-base-content/50">
-                      Always-on-top floating window above ALL apps — can't be minimized or ignored
-                    </p>
+                    <p class="text-sm font-medium">Ghost Window</p>
+                    <p class="text-xs text-base-content/50">Always-on-top · floats above every app</p>
                   </div>
                 </label>
               </div>
